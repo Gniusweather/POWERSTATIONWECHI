@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Fullscreen Weather Dashboard — Auto Refresh</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --gap: 10px;
+      --bg: #071018;
+      --card-border: rgba(255,255,255,0.04);
+      --title-bg: rgba(0,0,0,0.22);
+      --title-color: #e6f7fb;
+      --accent: #00bcd4;
+      --control-bg: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,Arial,Helvetica,sans-serif;color:#fff}
+    .wrap{height:100vh;display:flex;flex-direction:column;padding:12px;box-sizing:border-box}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px}
+    header h1{margin:0;font-size:18px;color:var(--accent)}
+    .controls{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      background:var(--control-bg);
+      padding:8px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.02);
+      font-size:13px;
+    }
+    .controls label{font-size:13px;color:#d7eef2}
+    .controls input[type="number"]{
+      width:80px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff
+    }
+    .controls button{
+      background:var(--accent);color:#071018;border:0;padding:8px 10px;border-radius:6px;font-weight:600;cursor:pointer
+    }
+    .controls button.secondary{background:transparent;color:var(--accent);border:1px solid rgba(0,188,212,0.18)}
+    .status{font-size:13px;color:#b7c7ca;margin-left:8px}
+
+    .grid{
+      flex:1;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      grid-template-rows:repeat(2,1fr);
+      gap:var(--gap);
+      align-items:stretch;
+    }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+      border:1px solid var(--card-border);
+      border-radius:8px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+    .card .title{
+      padding:10px 12px;
+      font-size:14px;
+      color:var(--title-color);
+      background:var(--title-bg);
+      border-bottom:1px solid rgba(255,255,255,0.02);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .card iframe{
+      width:100%;
+      height:100%;
+      border:0;
+      display:block;
+      flex:1 1 auto;
+    }
+
+    @media (max-width:1200px){ .grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:420px} }
+    @media (max-width:700px){ .grid{grid-template-columns:1fr;grid-auto-rows:360px} header h1{font-size:16px} }
+
+    .footer{margin-top:10px;font-size:13px;color:#b7c7ca}
+    .small{font-size:12px;color:#bfc9cb}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Weather Dashboard</h1>
+
+      <div class="controls" aria-label="Auto refresh controls">
+        <label for="interval">Refresh every (sec)</label>
+        <input id="interval" type="number" min="10" step="10" value="300">
+        <button id="toggle">Start Auto Refresh</button>
+        <button id="refreshNow" class="secondary">Refresh Now</button>
+        <div class="status" id="lastRef">Last refresh: never</div>
+      </div>
+    </header>
+
+    <div class="grid">
+
+      <!-- Ventusky Precipitation -->
+      <div class="card">
+        <div class="title"><span><strong>Ventusky</strong> — Precipitation</span><span class="small" id="t1"></span></div>
+        <iframe id="f1" loading="lazy"
+          src="https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off"></iframe>
+      </div>
+
+      <!-- Windy Rain -->
+      <div class="card">
+        <div class="title"><span><strong>Windy</strong> — Rain (AROME)</span><span class="small" id="t2"></span></div>
+        <iframe id="f2" loading="lazy"
+          src="https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles"></iframe>
+      </div>
+
+      <!-- Ventusky Dust -->
+      <div class="card">
+        <div class="title"><span><strong>Ventusky</strong> — Dust</span><span class="small" id="t3"></span></div>
+        <iframe id="f3" loading="lazy"
+          src="https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off"></iframe>
+      </div>
+
+      <!-- Windy Radar -->
+      <div class="card">
+        <div class="title"><span><strong>Windy</strong> — Radar</span><span class="small" id="t4"></span></div>
+        <iframe id="f4" loading="lazy"
+          src="https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar"></iframe>
+      </div>
+
+      <!-- Windy Satellite (Infrared) -->
+      <div class="card">
+        <div class="title"><span><strong>Windy</strong> — Satellite (Infra)</span><span class="small" id="t5"></span></div>
+        <iframe id="f5" loading="lazy"
+          src="https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra"></iframe>
+      </div>
+
+      <!-- ADSBexchange Radar -->
+      <div class="card">
+        <div class="title"><span><strong>ADSBexchange</strong> — Live Radar (TNCC)</span><span class="small" id="t6"></span></div>
+        <iframe id="f6" loading="lazy"
+          src="https://globe.adsbexchange.com/?airport=tncc&zoom=8"></iframe>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <strong>Notes</strong> — Auto refresh reloads each iframe by resetting its `src`.
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const intervalInput = document.getElementById('interval');
+      const toggleBtn = document.getElementById('toggle');
+      const refreshNowBtn = document.getElementById('refreshNow');
+      const lastRef = document.getElementById('lastRef');
+
+      const iframeIds = ['f1','f2','f3','f4','f5','f6'];
+      let timer = null;
+      let running = false;
+
+      function nowStamp(){
+        return new Date().toLocaleString();
+      }
+
+      function refreshAll(){
+        iframeIds.forEach(id => {
+          const el = document.getElementById(id);
+          if(!el) return;
+          if(el.src && el.src !== 'about:blank'){
+            const url = new URL(el.src);
+            url.searchParams.set('_t', Date.now());
+            el.src = url.toString();
+          }
+        });
+        lastRef.textContent = 'Last refresh: ' + nowStamp();
+      }
+
+      function startAuto(){
+        const sec = Math.max(10, Number(intervalInput.value) || 300);
+        if(timer) clearInterval(timer);
+        timer = setInterval(refreshAll, sec * 1000);
+        running = true;
+        toggleBtn.textContent = 'Stop Auto Refresh';
+        toggleBtn.style.background = 'crimson';
+        lastRef.textContent = 'Last refresh: ' + nowStamp();
+      }
+
+      function stopAuto(){
+        if(timer) clearInterval(timer);
+        timer = null;
+        running = false;
+        toggleBtn.textContent = 'Start Auto Refresh';
+        toggleBtn.style.background = '';
+      }
+
+      toggleBtn.addEventListener('click', () => running ? stopAuto() : startAuto());
+      refreshNowBtn.addEventListener('click', refreshAll);
+
+      window.addEventListener('keydown', e => {
+        if(e.key === 'r' || e.key === 'R') refreshAll();
+      });
+
+      iframeIds.forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('load', () => {
+          const label = document.getElementById('t' + id.slice(1));
+          label.textContent = 'loaded: ' + new Date().toLocaleTimeString();
+        });
+      });
+
+    })();
+  </script>
+</body>
+</html>
