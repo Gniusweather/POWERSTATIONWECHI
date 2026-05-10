@@ -2,212 +2,678 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Fullscreen Weather Dashboard — Auto Refresh</title>
+  <title>Weather Dashboard — Curaçao</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    :root{
+    :root {
       --gap: 10px;
-      --bg: #071018;
-      --card-border: rgba(255,255,255,0.04);
-      --title-bg: rgba(0,0,0,0.22);
-      --title-color: #e6f7fb;
-      --accent: #00bcd4;
-      --control-bg: rgba(255,255,255,0.03);
-    }
-    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,Arial,Helvetica,sans-serif;color:#fff}
-    .wrap{height:100vh;display:flex;flex-direction:column;padding:12px;box-sizing:border-box}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px}
-    header h1{margin:0;font-size:18px;color:var(--accent)}
-    .controls{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      background:var(--control-bg);
-      padding:8px;
-      border-radius:8px;
-      border:1px solid rgba(255,255,255,0.02);
-      font-size:13px;
-    }
-    .controls label{font-size:13px;color:#d7eef2}
-    .controls input[type="number"]{
-      width:80px;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff
-    }
-    .controls button{
-      background:var(--accent);color:#071018;border:0;padding:8px 10px;border-radius:6px;font-weight:600;cursor:pointer
-    }
-    .controls button.secondary{background:transparent;color:var(--accent);border:1px solid rgba(0,188,212,0.18)}
-    .status{font-size:13px;color:#b7c7ca;margin-left:8px}
-
-    .grid{
-      flex:1;
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      grid-template-rows:repeat(2,1fr);
-      gap:var(--gap);
-      align-items:stretch;
-    }
-    .card{
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
-      border:1px solid var(--card-border);
-      border-radius:8px;
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      min-height:0;
-    }
-    .card .title{
-      padding:10px 12px;
-      font-size:14px;
-      color:var(--title-color);
-      background:var(--title-bg);
-      border-bottom:1px solid rgba(255,255,255,0.02);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .card iframe{
-      width:100%;
-      height:100%;
-      border:0;
-      display:block;
-      flex:1 1 auto;
+      --bg: #080f18;
+      --surface: rgba(255,255,255,0.028);
+      --surface-hover: rgba(255,255,255,0.05);
+      --border: rgba(255,255,255,0.06);
+      --border-strong: rgba(0,210,180,0.25);
+      --accent: #00d2b4;
+      --accent-dim: rgba(0,210,180,0.15);
+      --accent2: #0090ff;
+      --warn: #ff6b35;
+      --text: #e8f4f2;
+      --text-muted: #7a9ea0;
+      --text-dim: #3a5558;
+      --mono: 'Space Mono', monospace;
+      --sans: 'DM Sans', sans-serif;
+      --radius: 10px;
+      --header-h: 62px;
+      --footer-h: 32px;
     }
 
-    @media (max-width:1200px){ .grid{grid-template-columns:repeat(2,1fr);grid-auto-rows:420px} }
-    @media (max-width:700px){ .grid{grid-template-columns:1fr;grid-auto-rows:360px} header h1{font-size:16px} }
+    *, *::before, *::after { box-sizing: border-box; }
 
-    .footer{margin-top:10px;font-size:13px;color:#b7c7ca}
-    .small{font-size:12px;color:#bfc9cb}
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      font-family: var(--sans);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* Subtle noise texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    .wrap {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 12px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand .loc {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      letter-spacing: 0.05em;
+    }
+
+    /* Live clock */
+    .clock {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .hdiv {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--border-strong), transparent);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .ctrl-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+
+    .ctrl-input {
+      width: 64px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .ctrl-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, background 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { opacity: 0.65; transform: scale(0.97); }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #040d10;
+    }
+    .btn-primary.active {
+      background: var(--warn);
+      color: #fff;
+    }
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--accent);
+      border: 1px solid var(--border-strong);
+    }
+
+    .btn-lock {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-lock.locked {
+      background: rgba(255,107,53,0.15);
+      color: var(--warn);
+      border-color: rgba(255,107,53,0.35);
+    }
+
+    /* Countdown ring */
+    .countdown-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .ring-svg { width: 28px; height: 28px; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--surface); stroke-width: 3; }
+    .ring-fg {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.9s linear, stroke 0.3s;
+    }
+    .countdown-wrap.stopped .ring-fg { stroke: var(--text-dim); }
+
+    .countdown-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      min-width: 38px;
+    }
+
+    /* ── GRID ── */
+    .grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: var(--gap);
+      min-height: 0;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      transition: border-color 0.3s;
+      position: relative;
+    }
+    .card:hover {
+      border-color: rgba(0,210,180,0.18);
+    }
+
+    /* Lock overlay — sits over iframe, blocks pointer events into it */
+    .card .lock-overlay {
+      position: absolute;
+      inset: 0;
+      top: 33px; /* below card-header */
+      z-index: 10;
+      display: none;
+      cursor: default;
+      /* subtle crosshatch to hint at locked state */
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 18px,
+        rgba(255,107,53,0.018) 18px,
+        rgba(255,107,53,0.018) 19px
+      );
+    }
+    .grid.locked .card .lock-overlay { display: block; }
+    .grid.locked .card { border-color: rgba(255,107,53,0.2); }
+
+    /* Loading shimmer overlay */
+    .card .shimmer {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg,
+        transparent 30%,
+        rgba(0,210,180,0.04) 50%,
+        transparent 70%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .card.loading .shimmer { opacity: 1; }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .card-header {
+      padding: 8px 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(0,0,0,0.18);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 3;
+      position: relative;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .source-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .badge-ventusky { background: rgba(0,144,255,0.18); color: var(--accent2); border: 1px solid rgba(0,144,255,0.25); }
+    .badge-windy    { background: rgba(0,210,180,0.14); color: var(--accent); border: 1px solid rgba(0,210,180,0.22); }
+    .badge-adsb     { background: rgba(255,107,53,0.14); color: var(--warn); border: 1px solid rgba(255,107,53,0.22); }
+
+    .card-layer {
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .card-ts {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .card-ts.fresh { color: var(--accent); }
+
+    .card iframe {
+      width: 100%;
+      flex: 1;
+      border: 0;
+      display: block;
+      min-height: 0;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      height: var(--footer-h);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .footer-note {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-family: var(--mono);
+      letter-spacing: 0.04em;
+    }
+
+    .shortcut-hint {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+    .shortcut-hint kbd {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-family: inherit;
+      font-size: 10px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1200px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+      }
+    }
+    @media (max-width: 720px) {
+      html, body { overflow: auto; }
+      .wrap { height: auto; }
+      .grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: none;
+      }
+      .card { min-height: 340px; }
+      .controls { flex-wrap: wrap; }
+      .hdiv { display: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Weather Dashboard</h1>
+<div class="wrap">
 
-      <div class="controls" aria-label="Auto refresh controls">
-        <label for="interval">Refresh every (sec)</label>
-        <input id="interval" type="number" min="10" step="10" value="300">
-        <button id="toggle">Start Auto Refresh</button>
-        <button id="refreshNow" class="secondary">Refresh Now</button>
-        <div class="status" id="lastRef">Last refresh: never</div>
-      </div>
-    </header>
-
-    <div class="grid">
-
-      <!-- Ventusky Precipitation -->
-      <div class="card">
-        <div class="title"><span><strong>Ventusky</strong> — Precipitation</span><span class="small" id="t1"></span></div>
-        <iframe id="f1" loading="lazy"
-          src="https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off"></iframe>
-      </div>
-
-      <!-- Windy Rain -->
-      <div class="card">
-        <div class="title"><span><strong>Windy</strong> — Rain (AROME)</span><span class="small" id="t2"></span></div>
-        <iframe id="f2" loading="lazy"
-          src="https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles"></iframe>
-      </div>
-
-      <!-- Ventusky Dust -->
-      <div class="card">
-        <div class="title"><span><strong>Ventusky</strong> — Dust</span><span class="small" id="t3"></span></div>
-        <iframe id="f3" loading="lazy"
-          src="https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off"></iframe>
-      </div>
-
-      <!-- Windy Radar -->
-      <div class="card">
-        <div class="title"><span><strong>Windy</strong> — Radar</span><span class="small" id="t4"></span></div>
-        <iframe id="f4" loading="lazy"
-          src="https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar"></iframe>
-      </div>
-
-      <!-- Windy Satellite (Infrared) -->
-      <div class="card">
-        <div class="title"><span><strong>Windy</strong> — Satellite (Infra)</span><span class="small" id="t5"></span></div>
-        <iframe id="f5" loading="lazy"
-          src="https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra"></iframe>
-      </div>
-
-      <!-- ADSBexchange Radar -->
-      <div class="card">
-        <div class="title"><span><strong>ADSBexchange</strong> — Live Radar (TNCC)</span><span class="small" id="t6"></span></div>
-        <iframe id="f6" loading="lazy"
-          src="https://globe.adsbexchange.com/?airport=tncc&zoom=8"></iframe>
-      </div>
-
+  <header>
+    <div class="brand">
+      <h1>⬡ WXDASH</h1>
+      <span class="loc">Curaçao · 12°N 69°W</span>
     </div>
 
-    <div class="footer">
-      <strong>Notes</strong> — Auto refresh reloads each iframe by resetting its `src`.
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="hdiv"></div>
+
+    <div class="controls">
+      <span class="ctrl-label">INTERVAL</span>
+      <input id="interval" class="ctrl-input" type="number" min="10" step="10" value="300" aria-label="Refresh interval in seconds">
+      <span class="ctrl-label">SEC</span>
+
+      <div class="countdown-wrap stopped" id="countdownWrap">
+        <svg class="ring-svg" viewBox="0 0 28 28">
+          <circle class="ring-bg" cx="14" cy="14" r="11"/>
+          <circle class="ring-fg" id="ring" cx="14" cy="14" r="11"
+            stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
+        </svg>
+        <span class="countdown-text" id="countdownText">—</span>
+      </div>
+
+      <button class="btn btn-primary" id="toggleBtn">▶ START</button>
+      <button class="btn btn-ghost"   id="nowBtn">↺ NOW</button>
+      <button class="btn btn-lock"    id="lockBtn" title="Lock iframes (prevent scroll/zoom)">🔓 LOCK</button>
     </div>
+  </header>
+
+  <div class="grid" id="grid">
+
+    <div class="card loading" id="card1">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-ventusky">Ventusky</span>
+          <span class="card-layer">Precipitation</span>
+        </div>
+        <span class="card-ts" id="ts1">—</span>
+      </div>
+      <iframe id="f1" title="Ventusky Precipitation"
+        src="https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off"></iframe>
+    </div>
+
+    <div class="card loading" id="card2">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-windy">Windy</span>
+          <span class="card-layer">Rain · AROME</span>
+        </div>
+        <span class="card-ts" id="ts2">—</span>
+      </div>
+      <iframe id="f2" title="Windy Rain AROME"
+        src="https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles"></iframe>
+    </div>
+
+    <div class="card loading" id="card3">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-ventusky">Ventusky</span>
+          <span class="card-layer">Dust</span>
+        </div>
+        <span class="card-ts" id="ts3">—</span>
+      </div>
+      <iframe id="f3" title="Ventusky Dust"
+        src="https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off"></iframe>
+    </div>
+
+    <div class="card loading" id="card4">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-windy">Windy</span>
+          <span class="card-layer">Radar</span>
+        </div>
+        <span class="card-ts" id="ts4">—</span>
+      </div>
+      <iframe id="f4" title="Windy Radar"
+        src="https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar"></iframe>
+    </div>
+
+    <div class="card loading" id="card5">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-windy">Windy</span>
+          <span class="card-layer">Satellite · IR</span>
+        </div>
+        <span class="card-ts" id="ts5">—</span>
+      </div>
+      <iframe id="f5" title="Windy Satellite Infrared"
+        src="https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra"></iframe>
+    </div>
+
+    <div class="card loading" id="card6">
+      <div class="shimmer"></div>
+      <div class="lock-overlay"></div>
+      <div class="card-header">
+        <div class="card-title">
+          <span class="source-badge badge-adsb">ADSB</span>
+          <span class="card-layer">Live Traffic · TNCC</span>
+        </div>
+        <span class="card-ts" id="ts6">—</span>
+      </div>
+      <iframe id="f6" title="ADSBexchange Live Radar TNCC"
+        src="https://globe.adsbexchange.com/?airport=tncc&zoom=8"></iframe>
+    </div>
+
   </div>
 
-  <script>
-    (function(){
-      const intervalInput = document.getElementById('interval');
-      const toggleBtn = document.getElementById('toggle');
-      const refreshNowBtn = document.getElementById('refreshNow');
-      const lastRef = document.getElementById('lastRef');
+  <footer>
+    <span class="footer-note">↑ iframes refresh by src reassignment — no params mutated</span>
+    <span class="shortcut-hint"><kbd>R</kbd> refresh &nbsp;·&nbsp; <kbd>Space</kbd> auto &nbsp;·&nbsp; <kbd>L</kbd> lock</span>
+  </footer>
 
-      const iframeIds = ['f1','f2','f3','f4','f5','f6'];
-      let timer = null;
-      let running = false;
+</div>
 
-      function nowStamp(){
-        return new Date().toLocaleString();
-      }
+<script>
+(function () {
+  'use strict';
 
-      function refreshAll(){
-        iframeIds.forEach(id => {
-          const el = document.getElementById(id);
-          if(!el) return;
-          if(el.src && el.src !== 'about:blank'){
-            const url = new URL(el.src);
-            url.searchParams.set('_t', Date.now());
-            el.src = url.toString();
-          }
-        });
-        lastRef.textContent = 'Last refresh: ' + nowStamp();
-      }
+  // ── Config ──────────────────────────────────────────────────────────────
+  const FRAMES = [
+    { frameId: 'f1', cardId: 'card1', tsId: 'ts1',
+      src: 'https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off' },
+    { frameId: 'f2', cardId: 'card2', tsId: 'ts2',
+      src: 'https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles' },
+    { frameId: 'f3', cardId: 'card3', tsId: 'ts3',
+      src: 'https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off' },
+    { frameId: 'f4', cardId: 'card4', tsId: 'ts4',
+      src: 'https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar' },
+    { frameId: 'f5', cardId: 'card5', tsId: 'ts5',
+      src: 'https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra' },
+    { frameId: 'f6', cardId: 'card6', tsId: 'ts6',
+      src: 'https://globe.adsbexchange.com/?airport=tncc&zoom=8' },
+  ];
 
-      function startAuto(){
-        const sec = Math.max(10, Number(intervalInput.value) || 300);
-        if(timer) clearInterval(timer);
-        timer = setInterval(refreshAll, sec * 1000);
-        running = true;
-        toggleBtn.textContent = 'Stop Auto Refresh';
-        toggleBtn.style.background = 'crimson';
-        lastRef.textContent = 'Last refresh: ' + nowStamp();
-      }
+  // ── Elements ─────────────────────────────────────────────────────────────
+  const intervalInput   = document.getElementById('interval');
+  const toggleBtn       = document.getElementById('toggleBtn');
+  const nowBtn          = document.getElementById('nowBtn');
+  const lockBtn         = document.getElementById('lockBtn');
+  const grid            = document.getElementById('grid');
+  const clockEl         = document.getElementById('clock');
+  const countdownWrap   = document.getElementById('countdownWrap');
+  const countdownText   = document.getElementById('countdownText');
+  const ring            = document.getElementById('ring');
+  const RING_CIRC       = 69.1; // 2π × r (r=11)
 
-      function stopAuto(){
-        if(timer) clearInterval(timer);
-        timer = null;
-        running = false;
-        toggleBtn.textContent = 'Start Auto Refresh';
-        toggleBtn.style.background = '';
-      }
+  // ── State ────────────────────────────────────────────────────────────────
+  let autoTimer    = null;
+  let countTimer   = null;
+  let running      = false;
+  let locked       = false;
+  let nextRefreshAt = null;
+  let intervalSec  = 300;
 
-      toggleBtn.addEventListener('click', () => running ? stopAuto() : startAuto());
-      refreshNowBtn.addEventListener('click', refreshAll);
+  // ── Clock ────────────────────────────────────────────────────────────────
+  function tickClock() {
+    clockEl.textContent = new Date().toLocaleTimeString('en-US', {
+      hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
 
-      window.addEventListener('keydown', e => {
-        if(e.key === 'r' || e.key === 'R') refreshAll();
-      });
+  // ── Countdown ring ───────────────────────────────────────────────────────
+  function updateRing() {
+    if (!running || !nextRefreshAt) {
+      ring.style.strokeDashoffset = RING_CIRC;
+      countdownText.textContent = '—';
+      return;
+    }
+    const remaining = Math.max(0, nextRefreshAt - Date.now());
+    const fraction  = remaining / (intervalSec * 1000);
+    ring.style.strokeDashoffset = RING_CIRC * (1 - fraction);
+    countdownText.textContent   = Math.ceil(remaining / 1000) + 's';
+  }
 
-      iframeIds.forEach(id => {
-        const el = document.getElementById(id);
-        el.addEventListener('load', () => {
-          const label = document.getElementById('t' + id.slice(1));
-          label.textContent = 'loaded: ' + new Date().toLocaleTimeString();
-        });
-      });
+  // ── Refresh ──────────────────────────────────────────────────────────────
+  // BUG FIX: Don't mutate the src URL — just reassign the original src.
+  // URL mutation via searchParams drops hash fragments (breaking Ventusky URLs).
+  function refreshFrame(cfg) {
+    const iframe = document.getElementById(cfg.frameId);
+    const card   = document.getElementById(cfg.cardId);
+    if (!iframe || !card) return;
 
-    })();
-  </script>
+    card.classList.add('loading');
+    // Re-assign the known-good original src; browser treats it as a reload.
+    iframe.src = cfg.src;
+  }
+
+  function markLoaded(cfg) {
+    const card = document.getElementById(cfg.cardId);
+    const ts   = document.getElementById(cfg.tsId);
+    if (card) card.classList.remove('loading');
+    if (ts) {
+      const t = new Date().toLocaleTimeString('en-US', { hour12: false });
+      ts.textContent = t;
+      ts.classList.add('fresh');
+      setTimeout(() => ts.classList.remove('fresh'), 4000);
+    }
+  }
+
+  function refreshAll() {
+    FRAMES.forEach(cfg => refreshFrame(cfg));
+  }
+
+  // ── Auto-refresh ─────────────────────────────────────────────────────────
+  function startAuto() {
+    intervalSec = Math.max(10, Number(intervalInput.value) || 300);
+    if (autoTimer)  clearInterval(autoTimer);
+    if (countTimer) clearInterval(countTimer);
+
+    refreshAll(); // immediate refresh on start
+    nextRefreshAt = Date.now() + intervalSec * 1000;
+
+    autoTimer = setInterval(() => {
+      refreshAll();
+      nextRefreshAt = Date.now() + intervalSec * 1000;
+    }, intervalSec * 1000);
+
+    countTimer = setInterval(updateRing, 500);
+
+    running = true;
+    toggleBtn.textContent = '■ STOP';
+    toggleBtn.classList.add('active');
+    countdownWrap.classList.remove('stopped');
+    updateRing();
+  }
+
+  function stopAuto() {
+    if (autoTimer)  { clearInterval(autoTimer);  autoTimer = null; }
+    if (countTimer) { clearInterval(countTimer); countTimer = null; }
+    running = false;
+    nextRefreshAt = null;
+    toggleBtn.textContent = '▶ START';
+    toggleBtn.classList.remove('active');
+    countdownWrap.classList.add('stopped');
+    updateRing();
+  }
+
+  // ── Lock ─────────────────────────────────────────────────────────────────
+  function toggleLock() {
+    locked = !locked;
+    grid.classList.toggle('locked', locked);
+    lockBtn.textContent  = locked ? '🔒 LOCKED' : '🔓 LOCK';
+    lockBtn.classList.toggle('locked', locked);
+    lockBtn.title = locked
+      ? 'Iframes locked — click to allow scroll/zoom'
+      : 'Lock iframes (prevent scroll/zoom)';
+  }
+
+  lockBtn.addEventListener('click', toggleLock);
+
+  // ── Events ───────────────────────────────────────────────────────────────
+  toggleBtn.addEventListener('click', () => running ? stopAuto() : startAuto());
+
+  nowBtn.addEventListener('click', () => {
+    refreshAll();
+    if (running) {
+      // Reset the countdown after a manual refresh
+      clearInterval(autoTimer);
+      nextRefreshAt = Date.now() + intervalSec * 1000;
+      autoTimer = setInterval(() => {
+        refreshAll();
+        nextRefreshAt = Date.now() + intervalSec * 1000;
+      }, intervalSec * 1000);
+    }
+  });
+
+  // BUG FIX: Only fire keyboard shortcut when not focused on an input
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'r' || e.key === 'R') { nowBtn.click(); }
+    if (e.key === ' ') { e.preventDefault(); toggleBtn.click(); }
+    if (e.key === 'l' || e.key === 'L') { toggleLock(); }
+  });
+
+  // BUG FIX: Load events on the iframes — fires reliably for loaded state
+  FRAMES.forEach(cfg => {
+    const iframe = document.getElementById(cfg.frameId);
+    if (!iframe) return;
+    iframe.addEventListener('load', () => markLoaded(cfg));
+  });
+
+})();
+</script>
 </body>
 </html>
