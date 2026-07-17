@@ -1,679 +1,2400 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Weather Dashboard — Curaçao</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --gap: 10px;
-      --bg: #080f18;
-      --surface: rgba(255,255,255,0.028);
-      --surface-hover: rgba(255,255,255,0.05);
-      --border: rgba(255,255,255,0.06);
-      --border-strong: rgba(0,210,180,0.25);
-      --accent: #00d2b4;
-      --accent-dim: rgba(0,210,180,0.15);
-      --accent2: #0090ff;
-      --warn: #ff6b35;
-      --text: #e8f4f2;
-      --text-muted: #7a9ea0;
-      --text-dim: #3a5558;
-      --mono: 'Space Mono', monospace;
-      --sans: 'DM Sans', sans-serif;
-      --radius: 10px;
-      --header-h: 62px;
-      --footer-h: 32px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Power Dashboard - Curaçao</title>
 
-    *, *::before, *::after { box-sizing: border-box; }
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#050810">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PowerDash">
+    <link rel="apple-touch-icon" href="icon.svg">
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
-      font-family: var(--sans);
-      color: var(--text);
-      overflow: hidden;
-    }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
 
-    /* Subtle noise texture overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-      background-size: 200px 200px;
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.4;
-    }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #050810;
+            color: white; margin: 0; min-height: 100vh;
+        }
 
-    .wrap {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 12px;
-    }
+        /* ── BACKGROUND GLOW BLOBS ── */
+        body::before {
+            content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+            background:
+                radial-gradient(ellipse 60% 40% at 10% 20%, rgba(52,211,153,0.06) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 35% at 85% 15%, rgba(56,189,248,0.07) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 50% 80%, rgba(139,92,246,0.05) 0%, transparent 70%);
+        }
+        .above-bg { position:relative; z-index:1; }
 
-    /* ── HEADER ── */
-    header {
-      height: var(--header-h);
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding-bottom: 10px;
-      flex-shrink: 0;
-    }
+        .header {
+            background: rgba(5,8,16,0.90);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            position: sticky; top: 0; z-index: 50;
+        }
 
-    .brand {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      flex-shrink: 0;
-    }
+        /* ── CARDS ── */
+        .card {
+            background: rgba(14,20,46,0.80);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.07);
+            transition: transform 0.25s ease, box-shadow 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .card::after {
+            content:''; position:absolute; inset:0; pointer-events:none;
+            background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5); }
 
-    .brand h1 {
-      margin: 0;
-      font-family: var(--mono);
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+        /* accent top line per card type */
+        .card-accent-green::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #34d399, transparent); }
+        .card-accent-sky::before   { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #38bdf8, transparent); }
+        .card-accent-cyan::before  { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #22d3ee, transparent); }
+        .card-accent-orange::before{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #fb923c, transparent); }
+        .card-accent-purple::before{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #a78bfa, transparent); }
+        .card-accent-yellow::before{ content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #fbbf24, transparent); }
+        .card-accent-blue::before  { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #60a5fa, transparent); }
 
-    .brand .loc {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-family: var(--mono);
-      letter-spacing: 0.05em;
-    }
+        .card-glow-green { box-shadow: 0 0 0 1px rgba(52,211,153,0.3), 0 8px 32px rgba(52,211,153,0.10); }
+        .card-glow-red   { box-shadow: 0 0 0 1px rgba(248,113,113,0.3), 0 8px 32px rgba(248,113,113,0.08); }
 
-    /* Live clock */
-    .clock {
-      font-family: var(--mono);
-      font-size: 13px;
-      color: var(--text-muted);
-      letter-spacing: 0.06em;
-      flex-shrink: 0;
-    }
+        .value { font-size:1.75rem; line-height:1; font-weight:700; }
 
-    /* Divider */
-    .hdiv {
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, var(--border-strong), transparent);
-    }
+        /* ── CONTROLS ── */
+        .tab-active {
+            background: linear-gradient(90deg,#00c6ff,#0072ff);
+            color:white; box-shadow:0 0 18px rgba(0,180,255,0.45);
+        }
+        .temp-active {
+            background: linear-gradient(90deg,#34d399,#06b6d4);
+            color:#04121f; box-shadow:0 0 12px rgba(52,211,153,0.5);
+        }
+        .stats-tab-active {
+            background: rgba(255,255,255,0.12);
+            color: white;
+        }
 
-    /* Controls */
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
+        /* ── INPUTS ── */
+        .solar-input {
+            background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.13);
+            color:white;
+        }
+        .solar-input:focus { outline:none; border-color:#34d399; box-shadow:0 0 12px rgba(52,211,153,0.3); }
 
-    .ctrl-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--mono);
-      letter-spacing: 0.04em;
-    }
+        /* ── ANIMATIONS ── */
+        @keyframes pulse-dot  { 0%,100%{opacity:1} 50%{opacity:0.25} }
+        .pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; }
 
-    .ctrl-input {
-      width: 64px;
-      padding: 5px 8px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 12px;
-      text-align: center;
-      transition: border-color 0.2s;
-    }
-    .ctrl-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
+        @keyframes spin-slow { to { transform:rotate(360deg); } }
 
-    .btn {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-family: var(--mono);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.15s, background 0.2s;
-    }
-    .btn:hover { opacity: 0.85; }
-    .btn:active { opacity: 0.65; transform: scale(0.97); }
+        /* ── FEELS-LIKE HERO ── */
+        .feels-hero {
+            font-size: clamp(4rem,11vw,7rem);
+            font-weight: 800; letter-spacing:-0.04em; line-height:1;
+            background: linear-gradient(150deg,#ffffff 30%,#7dd3fc 100%);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
 
-    .btn-primary {
-      background: var(--accent);
-      color: #040d10;
-    }
-    .btn-primary.active {
-      background: var(--warn);
-      color: #fff;
-    }
-    .btn-ghost {
-      background: var(--surface);
-      color: var(--accent);
-      border: 1px solid var(--border-strong);
-    }
+        /* ── SOLAR RING ── */
+        #solarArc { transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.6s ease; }
 
-    .btn-lock {
-      background: var(--surface);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .btn-lock.locked {
-      background: rgba(255,107,53,0.15);
-      color: var(--warn);
-      border-color: rgba(255,107,53,0.35);
-    }
+        /* ── HISTORY BARS ── */
+        .hist-bar { flex:1; border-radius:3px 3px 0 0; min-height:2px; transition:height 0.9s ease, background 0.5s ease; }
 
-    /* Countdown ring */
-    .countdown-wrap {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-    .ring-svg { width: 28px; height: 28px; transform: rotate(-90deg); }
-    .ring-bg { fill: none; stroke: var(--surface); stroke-width: 3; }
-    .ring-fg {
-      fill: none;
-      stroke: var(--accent);
-      stroke-width: 3;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.9s linear, stroke 0.3s;
-    }
-    .countdown-wrap.stopped .ring-fg { stroke: var(--text-dim); }
+        /* ── POWER FLOW ── */
+        .flow-node {
+            display:flex; flex-direction:column; align-items:center;
+            border-radius:22px; padding:12px 20px; min-width:100px;
+            transition:all 0.4s ease;
+            border:1px solid rgba(255,255,255,0.10);
+        }
+        .flow-node-solar { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.2); }
+        .flow-node-house { background:rgba(251,146,60,0.08); border-color:rgba(251,146,60,0.2); }
+        .flow-node-grid  { background:rgba(52,211,153,0.08); border-color:rgba(52,211,153,0.2); }
+        .flow-node-grid.importing { background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.2); }
 
-    .countdown-text {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--text-muted);
-      min-width: 38px;
-    }
+        .flow-line { flex:1; position:relative; margin:0 6px; align-self:center; }
+        .flow-track-line {
+            height:3px; border-radius:2px; background:rgba(255,255,255,0.07);
+            position:relative; overflow:visible;
+        }
+        @keyframes dot-lr { 0%{left:-6px;opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{left:calc(100% + 2px);opacity:0} }
+        @keyframes dot-rl { 0%{left:calc(100% + 2px);opacity:0} 8%{opacity:1} 92%{opacity:1} 100%{left:-6px;opacity:0} }
+        .fdot { position:absolute; width:8px; height:8px; border-radius:50%; top:-2.5px; animation:dot-lr 1.3s linear infinite; }
+        .fdot.rev { animation-name:dot-rl; }
+        .fdot:nth-child(2){animation-delay:0.43s} .fdot:nth-child(3){animation-delay:0.86s}
 
-    /* ── GRID ── */
-    .grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: var(--gap);
-      min-height: 0;
-    }
+        /* ── RAIN ── */
+        .rain-wrap { position:relative; height:56px; border-radius:12px; overflow:hidden; background:rgba(147,197,253,0.03); }
+        @keyframes rfal { 0%{transform:translateY(-8px) rotate(8deg);opacity:.9} 100%{transform:translateY(65px) rotate(8deg);opacity:0} }
+        .rdrop { position:absolute; width:2px; border-radius:2px; background:linear-gradient(to bottom,transparent,#7dd3fc); animation:rfal linear infinite; }
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      transition: border-color 0.3s;
-      position: relative;
-    }
-    .card:hover {
-      border-color: rgba(0,210,180,0.18);
-    }
+        /* ── UV BAR ── */
+        .uv-track { height:7px; border-radius:99px; background:linear-gradient(to right,#22c55e 0%,#eab308 30%,#f97316 55%,#ef4444 75%,#a855f7 100%); }
+        .uv-cursor { width:12px;height:12px;border-radius:50%;background:white;border:2px solid rgba(0,0,0,0.45);position:absolute;top:-2.5px;transition:left 1s ease; }
 
-    /* Lock overlay — sits over iframe, blocks pointer events into it */
-    .card .lock-overlay {
-      position: absolute;
-      inset: 0;
-      top: 33px; /* below card-header */
-      z-index: 10;
-      display: none;
-      cursor: default;
-      /* subtle crosshatch to hint at locked state */
-      background: repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 18px,
-        rgba(255,107,53,0.018) 18px,
-        rgba(255,107,53,0.018) 19px
-      );
-    }
-    .grid.locked .card .lock-overlay { display: block; }
-    .grid.locked .card { border-color: rgba(255,107,53,0.2); }
+        /* ── STATS CHART ── */
+        .chart-col { display:flex; flex-direction:column; align-items:center; flex:1; min-width:0; }
+        .chart-bars { display:flex; align-items:flex-end; gap:2px; width:100%; justify-content:center; }
+        .cbar { border-radius:3px 3px 0 0; min-height:2px; transition:height 0.7s cubic-bezier(0.4,0,0.2,1); width:100%; }
+        .chart-lbl { font-size:9px; color:rgba(255,255,255,0.35); margin-top:4px; text-align:center; white-space:nowrap; }
+        .chart-lbl.today { color:#34d399; font-weight:700; }
 
-    /* Loading shimmer overlay */
-    .card .shimmer {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(110deg,
-        transparent 30%,
-        rgba(0,210,180,0.04) 50%,
-        transparent 70%
-      );
-      background-size: 200% 100%;
-      animation: shimmer 2s infinite;
-      pointer-events: none;
-      z-index: 2;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .card.loading .shimmer { opacity: 1; }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+        /* ── STAT TILE ── */
+        .stat-tile {
+            background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+            border-radius:16px; padding:12px 14px;
+        }
 
-    .card-header {
-      padding: 8px 11px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      background: rgba(0,0,0,0.18);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      z-index: 3;
-      position: relative;
-    }
+        /* KNMI */
+        .knmi-ok{background:#34d399} .knmi-busy{background:#fbbf24} .knmi-err{background:#f87171}
 
-    .card-title {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-    }
-
-    .source-badge {
-      font-family: var(--mono);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .badge-ventusky { background: rgba(0,144,255,0.18); color: var(--accent2); border: 1px solid rgba(0,144,255,0.25); }
-    .badge-windy    { background: rgba(0,210,180,0.14); color: var(--accent); border: 1px solid rgba(0,210,180,0.22); }
-    .badge-adsb     { background: rgba(255,107,53,0.14); color: var(--warn); border: 1px solid rgba(255,107,53,0.22); }
-
-    .card-layer {
-      font-size: 12px;
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .card-ts {
-      font-family: var(--mono);
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 0.04em;
-      flex-shrink: 0;
-    }
-    .card-ts.fresh { color: var(--accent); }
-
-    .card iframe {
-      width: 100%;
-      flex: 1;
-      border: 0;
-      display: block;
-      min-height: 0;
-    }
-
-    /* ── FOOTER ── */
-    footer {
-      height: var(--footer-h);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding-top: 6px;
-      flex-shrink: 0;
-    }
-
-    .footer-note {
-      font-size: 10px;
-      color: var(--text-dim);
-      font-family: var(--mono);
-      letter-spacing: 0.04em;
-    }
-
-    .shortcut-hint {
-      font-family: var(--mono);
-      font-size: 10px;
-      color: var(--text-dim);
-    }
-    .shortcut-hint kbd {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-family: inherit;
-      font-size: 10px;
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 1200px) {
-      .grid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(3, 1fr);
-      }
-    }
-    @media (max-width: 720px) {
-      html, body { overflow: auto; }
-      .wrap { height: auto; }
-      .grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: none;
-      }
-      .card { min-height: 340px; }
-      .controls { flex-wrap: wrap; }
-      .hdiv { display: none; }
-    }
-  </style>
+        /* auto-save toast */
+        #autoSaveToast{
+            position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+            background:rgba(14,20,46,0.96);border:1px solid rgba(52,211,153,0.35);
+            color:#34d399;font-size:12px;font-weight:600;padding:10px 18px;border-radius:99px;
+            backdrop-filter:blur(12px);z-index:200;pointer-events:none;
+            opacity:0;transition:opacity 0.4s ease;
+        }
+        #autoSaveToast.show{opacity:1;}
+    </style>
 </head>
 <body>
-<div class="wrap">
+<div class="above-bg pb-10">
 
-  <header>
-    <div class="brand">
-      <h1>⬡ WXDASH</h1>
-      <span class="loc">Curaçao · 12°N 69°W</span>
-    </div>
-
-    <div class="clock" id="clock">--:--:--</div>
-    <div class="hdiv"></div>
-
-    <div class="controls">
-      <span class="ctrl-label">INTERVAL</span>
-      <input id="interval" class="ctrl-input" type="number" min="10" step="10" value="300" aria-label="Refresh interval in seconds">
-      <span class="ctrl-label">SEC</span>
-
-      <div class="countdown-wrap stopped" id="countdownWrap">
-        <svg class="ring-svg" viewBox="0 0 28 28">
-          <circle class="ring-bg" cx="14" cy="14" r="11"/>
-          <circle class="ring-fg" id="ring" cx="14" cy="14" r="11"
-            stroke-dasharray="69.1" stroke-dashoffset="69.1"/>
-        </svg>
-        <span class="countdown-text" id="countdownText">—</span>
-      </div>
-
-      <button class="btn btn-primary" id="toggleBtn">▶ START</button>
-      <button class="btn btn-ghost"   id="nowBtn">↺ NOW</button>
-      <button class="btn btn-lock"    id="lockBtn" title="Lock iframes (prevent scroll/zoom)">🔓 LOCK</button>
-    </div>
-  </header>
-
-  <div class="grid" id="grid">
-
-    <div class="card loading" id="card1">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-ventusky">Ventusky</span>
-          <span class="card-layer">Precipitation</span>
+    <!-- HEADER -->
+    <div class="header py-3 px-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg shadow-lg"
+                 style="background:linear-gradient(135deg,#34d399,#22d3ee)">⚡</div>
+            <div>
+                <h1 class="text-[17px] font-bold tracking-tight">House Power Dashboard</h1>
+                <p class="text-[11px] text-emerald-400 font-medium tracking-wide">
+                    LIVE · CURAÇAO · <span id="headerSolarKwh">SOLAR 0.0 kWh</span>
+                </p>
+            </div>
         </div>
-        <span class="card-ts" id="ts1">—</span>
-      </div>
-      <iframe id="f1" title="Ventusky Precipitation"
-        src="https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off"></iframe>
-    </div>
-
-    <div class="card loading" id="card2">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-windy">Windy</span>
-          <span class="card-layer">Rain · AROME</span>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-1.5 text-[11px] text-white/40">
+                <span id="knmiDot" class="w-1.5 h-1.5 rounded-full knmi-busy pulse-dot inline-block"></span>
+                <span id="knmiTxt">KNMI…</span>
+            </div>
+            <div class="text-right">
+                <div id="currentTime" class="text-[13px] font-mono text-white/75 tabular-nums"></div>
+                <div id="currentDate" class="text-[11px] text-white/40"></div>
+            </div>
+            <button id="installBtn" onclick="installPWA()" title="Install app on device"
+                    class="hidden w-9 h-9 rounded-2xl flex items-center justify-center text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 transition-all border border-emerald-400/30">
+                <i class="fas fa-download text-sm"></i>
+            </button>
+            <button id="notifBtn" onclick="requestNotifications()" title="Enable evening reminder"
+                    class="hidden w-9 h-9 rounded-2xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/10">
+                <i class="fas fa-bell text-sm"></i>
+            </button>
+            <button onclick="openSettings()" title="System settings"
+                    class="w-9 h-9 rounded-2xl flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 transition-all border border-white/10">
+                <i class="fas fa-gear"></i>
+            </button>
         </div>
-        <span class="card-ts" id="ts2">—</span>
-      </div>
-      <iframe id="f2" title="Windy Rain AROME"
-        src="https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles"></iframe>
     </div>
 
-    <div class="card loading" id="card3">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-ventusky">Ventusky</span>
-          <span class="card-layer">Dust</span>
+    <!-- ═══ SETTINGS MODAL ═══ -->
+    <div id="settingsOverlay" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4"
+         style="background:rgba(3,6,14,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeSettings()">
+        <div class="card rounded-3xl p-6 w-full max-w-md card-accent-purple" style="background:rgba(14,20,46,0.97)">
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-sliders text-purple-400"></i>
+                    <span class="text-base font-bold">My System Settings</span>
+                </div>
+                <button onclick="closeSettings()" class="text-white/40 hover:text-white text-lg w-7 h-7"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="text-[11px] text-white/40 mb-4 leading-relaxed">Enter your real values so costs and solar output match your house.</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>🌞</span>Solar panel peak power (W)</label>
+                    <input id="setPeak" type="number" min="100" step="10" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
+                    <div class="text-[10px] text-white/30 mt-1">Total rated wattage of all your panels combined.</div>
+                </div>
+                <div>
+                    <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>💰</span>Electricity import rate (XCG/kWh)</label>
+                    <input id="setRate" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
+                    <div class="text-[10px] text-white/30 mt-1">What you pay the utility per kWh used.</div>
+                </div>
+                <div>
+                    <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>⬆️</span>Feed-in / export credit (XCG/kWh)</label>
+                    <input id="setExport" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
+                    <div class="text-[10px] text-white/30 mt-1">What the utility credits you for exported solar (0 if none).</div>
+                </div>
+                <div>
+                    <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>❄️</span>AC peak power (W)</label>
+                    <input id="setAcPeak" type="number" min="300" step="50" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
+                    <div class="text-[10px] text-white/30 mt-1">Rated/running wattage of your AC unit. Scales all AC load &amp; cost estimates (≈1280 W for a small split, ≈2500 W for a large one).</div>
+                </div>
+                <div>
+                    <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>🧊</span>Fridge running power (W)</label>
+                    <input id="setFridge" type="number" min="20" step="5" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
+                    <div class="text-[10px] text-white/30 mt-1">Compressor draw while running (check the label or a plug meter).</div>
+                </div>
+            </div>
+
+            <div id="settingsSaved" class="hidden mb-3 rounded-xl px-3 py-2 text-[12px] font-semibold text-emerald-400 text-center" style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25)">
+                ✓ Settings saved
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button onclick="saveSettings()" aria-label="Save settings" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-900 hover:opacity-90 transition-all" style="background:linear-gradient(to right,#a78bfa,#22d3ee)">
+                    <i class="fas fa-check mr-1"></i>Save
+                </button>
+                <button onclick="closeSettings()" aria-label="Cancel" class="px-5 py-2.5 rounded-xl bg-white/10 text-sm font-semibold hover:bg-white/15 transition-all">Cancel</button>
+            </div>
+
+            <!-- Data utilities -->
+            <div class="mt-5 pt-4 border-t border-white/[0.08]">
+                <div class="text-[10px] text-white/35 tracking-widest mb-2.5">DATA</div>
+                <div class="flex gap-2">
+                    <button onclick="exportStatsCSV()" aria-label="Export stats as CSV" class="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/70 hover:bg-white/10 transition-all border border-white/10">
+                        <i class="fas fa-file-csv mr-1.5 text-emerald-400"></i>Export CSV
+                    </button>
+                    <button onclick="resetToday()" aria-label="Reset today's counters" class="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/70 hover:bg-white/10 transition-all border border-white/10">
+                        <i class="fas fa-rotate-left mr-1.5 text-amber-400"></i>Reset Today
+                    </button>
+                </div>
+                <div class="text-[10px] text-white/25 mt-1.5">Export downloads your 30-day history. Reset zeroes today's running counters and clears manual entries.</div>
+            </div>
         </div>
-        <span class="card-ts" id="ts3">—</span>
-      </div>
-      <iframe id="f3" title="Ventusky Dust"
-        src="https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off"></iframe>
     </div>
 
-    <div class="card loading" id="card4">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-windy">Windy</span>
-          <span class="card-layer">Radar</span>
+    <!-- ═══ BILL REVIEW MODAL ═══ -->
+    <div id="billOverlay" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4"
+         style="background:rgba(3,6,14,0.75);backdrop-filter:blur(6px)" onclick="if(event.target===this)closeBillReview()">
+        <div class="card rounded-3xl p-5 w-full max-w-md card-accent-yellow" style="background:rgba(14,20,46,0.97);max-height:90vh;overflow-y:auto">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-invoice text-yellow-400"></i>
+                    <span class="text-base font-bold">Check the bill data</span>
+                </div>
+                <button onclick="closeBillReview()" class="text-white/40 hover:text-white text-lg w-7 h-7" aria-label="Close"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="billReviewNote" class="hidden mb-3 rounded-xl px-3 py-2 text-[11px] text-amber-300" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25)"></div>
+            <p class="text-[11px] text-white/40 mb-3 leading-relaxed">Compare with your receipt and correct anything that was misread before saving.</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">Period start</label>
+                    <input id="billStart" type="text" inputmode="numeric" placeholder="05.05.2026" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">Period end</label>
+                    <input id="billEnd" type="text" inputmode="numeric" placeholder="03.06.2026" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">⬇️ Import (kWh)</label>
+                    <input id="billImp" type="number" min="0" step="1" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">⬆️ Solar export (kWh)</label>
+                    <input id="billExp" type="number" min="0" step="1" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">💧 Water (m³)</label>
+                    <input id="billWater" type="number" min="0" step="0.1" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">⚡ Electricity (XCG)</label>
+                    <input id="billCostElec" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">🌞 Solar credit (XCG)</label>
+                    <input id="billCredSolar" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">🔌 Panel tariff (XCG)</label>
+                    <input id="billCostPanel" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">💧 Water cost (XCG)</label>
+                    <input id="billCostWater" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div>
+                    <label class="text-[11px] text-white/55 mb-1 block">Meter rent (XCG)</label>
+                    <input id="billCostMeter" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+                <div class="col-span-2">
+                    <label class="text-[11px] text-white/55 mb-1 block">💰 Saldo Final — total to pay (XCG)</label>
+                    <input id="billTotal" type="number" step="0.01" class="solar-input rounded-xl px-3 py-2 text-sm w-full">
+                </div>
+            </div>
+            <div class="flex gap-2 mt-5">
+                <button onclick="saveBillReview()" class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-900 hover:opacity-90 transition-all" style="background:linear-gradient(to right,#fbbf24,#f59e0b)">
+                    <i class="fas fa-check mr-1"></i>Save bill
+                </button>
+                <button onclick="closeBillReview()" class="px-5 py-2.5 rounded-xl bg-white/10 text-sm font-semibold hover:bg-white/15 transition-all">Cancel</button>
+            </div>
         </div>
-        <span class="card-ts" id="ts4">—</span>
-      </div>
-      <iframe id="f4" title="Windy Radar"
-        src="https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar"></iframe>
     </div>
 
-    <div class="card loading" id="card5">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-windy">Windy</span>
-          <span class="card-layer">Satellite · IR</span>
+    <div class="max-w-7xl mx-auto px-4 py-5 space-y-4">
+
+        <!-- AC CONTROLS -->
+        <div class="flex flex-wrap justify-center items-center gap-3">
+            <div class="inline-flex bg-white/5 rounded-[28px] p-1 border border-white/10 shadow-lg">
+                <button id="onBtn" onclick="setMode(true)"
+                        class="tab-active px-7 py-3 rounded-[24px] flex items-center gap-2 text-[15px] font-semibold transition-all">
+                    <i class="fas fa-snowflake text-sm"></i>AC ON
+                </button>
+                <button id="offBtn" onclick="setMode(false)"
+                        class="px-7 py-3 rounded-[24px] flex items-center gap-2 text-[15px] font-semibold text-white/70 transition-all">
+                    <i class="fas fa-power-off text-red-400 text-sm"></i>AC OFF
+                </button>
+            </div>
+            <div id="tempPicker" class="inline-flex bg-white/5 rounded-[28px] p-1 border border-white/10 shadow-lg">
+                <button id="temp26" onclick="setSetpoint(26)" class="px-6 py-3 rounded-[24px] text-[15px] font-semibold text-white/60 transition-all">26°C</button>
+                <button id="temp27" onclick="setSetpoint(27)" class="px-6 py-3 rounded-[24px] text-[15px] font-semibold text-white/60 transition-all">27°C</button>
+                <button id="temp28" onclick="setSetpoint(28)" class="temp-active px-6 py-3 rounded-[24px] text-[15px] font-semibold transition-all">28°C</button>
+            </div>
         </div>
-        <span class="card-ts" id="ts5">—</span>
-      </div>
-      <iframe id="f5" title="Windy Satellite Infrared"
-        src="https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra"></iframe>
-    </div>
 
-    <div class="card loading" id="card6">
-      <div class="shimmer"></div>
-      <div class="lock-overlay"></div>
-      <div class="card-header">
-        <div class="card-title">
-          <span class="source-badge badge-adsb">ADSB</span>
-          <span class="card-layer">Live Traffic · TNCC</span>
+        <!-- POWER FLOW -->
+        <div class="card rounded-3xl p-5 card-accent-green">
+            <div class="text-[10px] text-white/35 tracking-[0.2em] mb-4 text-center">LIVE POWER FLOW · <span id="selfSuff" class="text-emerald-400/70">—% SOLAR-POWERED</span></div>
+            <div class="flex items-center gap-2">
+
+                <div class="flow-node flow-node-solar">
+                    <div class="text-3xl mb-1.5" style="filter:drop-shadow(0 0 12px rgba(250,204,21,0.5))">🌞</div>
+                    <div id="flowSolarW" class="text-base font-bold text-emerald-400 tabular-nums">0 W</div>
+                    <div class="text-[10px] text-emerald-400/60 mt-0.5">SOLAR</div>
+                </div>
+
+                <div class="flow-line">
+                    <div class="flow-track-line">
+                        <div class="fdot bg-emerald-400"></div>
+                        <div class="fdot bg-emerald-400"></div>
+                        <div class="fdot bg-emerald-400"></div>
+                    </div>
+                </div>
+
+                <div class="flow-node flow-node-house">
+                    <div class="text-3xl mb-1.5">🏠</div>
+                    <div id="flowHouseW" class="text-base font-bold text-orange-300 tabular-nums">0 W</div>
+                    <div class="text-[10px] text-orange-300/60 mt-0.5">HOUSE</div>
+                </div>
+
+                <div class="flow-line">
+                    <div class="flow-track-line" id="gridTrackLine">
+                        <div class="fdot" id="gd1"></div>
+                        <div class="fdot" id="gd2"></div>
+                        <div class="fdot" id="gd3"></div>
+                    </div>
+                </div>
+
+                <div class="flow-node flow-node-grid" id="flowGridNode">
+                    <div class="text-3xl mb-1.5">🔌</div>
+                    <div id="flowGridW" class="text-base font-bold text-emerald-400 tabular-nums">0 W</div>
+                    <div id="flowGridLbl" class="text-[10px] text-emerald-400/60 mt-0.5">EXPORT</div>
+                </div>
+
+            </div>
         </div>
-        <span class="card-ts" id="ts6">—</span>
-      </div>
-      <iframe id="f6" title="ADSBexchange Live Radar TNCC"
-        src="https://globe.adsbexchange.com/?airport=tncc&zoom=8"></iframe>
+
+        <!-- MAIN GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <!-- WEATHER (1 col - smaller) -->
+            <div class="card rounded-2xl p-3 card-accent-sky">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <div id="wxIcon" class="text-2xl leading-none" style="filter:drop-shadow(0 0 14px rgba(250,200,30,0.55))">⛅</div>
+                        <div>
+                            <div class="text-[13px] font-bold">Bonaire</div>
+                            <div id="wxCondition" class="text-[9px] text-sky-400 tracking-widest uppercase mt-0.5">—</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div id="wxObsTime" class="text-[10px] text-white/25">KNMI Bonaire</div>
+                    </div>
+                </div>
+
+                <!-- Hero row -->
+                <div class="flex items-end gap-3 mb-3">
+                    <div>
+                        <div id="wxFeels" class="text-3xl font-bold text-white">—°</div>
+                        <div class="text-[9px] text-white/35 tracking-wider mt-0.5">FEELS</div>
+                    </div>
+                    <div class="mb-1 space-y-1">
+                        <div class="flex items-baseline gap-1">
+                            <span id="wxAir" class="text-lg font-bold text-white/75 tabular-nums">—</span>
+                            <span class="text-[9px] text-white/35">°C</span>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="wxDew" class="text-sm font-semibold text-sky-300 tabular-nums">—</span>
+                            <span class="text-[9px] text-white/35">dew</span>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="wxRh" class="text-sm font-semibold text-sky-200 tabular-nums">—</span>
+                            <span class="text-[9px] text-white/35">rh%</span>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span id="wxCloud" class="text-sm font-semibold text-white/55 tabular-nums">—</span>
+                            <span class="text-[9px] text-white/35">okta</span>
+                        </div>
+                    </div>
+                    <div class="ml-auto text-right mb-1">
+                        <div class="flex items-center justify-end gap-1">
+                            <span id="wxPressureTrend" class="text-lg font-bold text-purple-300"></span>
+                            <span id="wxPressure" class="text-[13px] font-semibold text-purple-300">— hPa</span>
+                        </div>
+                        <div id="wxPressureHint" class="text-[10px] text-white/25 mt-0.5">pressure</div>
+                    </div>
+                </div>
+
+                <!-- Wind / Rain -->
+                <div class="grid grid-cols-2 gap-3">
+
+                    <!-- Wind -->
+                    <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
+                        <div class="text-[10px] text-white/35 tracking-widest">WIND</div>
+                        <svg viewBox="-44 -44 88 88" width="76" height="76">
+                            <circle r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+                            <line x1="0" y1="-42" x2="0" y2="-35" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                            <line x1="0" y1="42" x2="0" y2="35" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                            <line x1="42" y1="0" x2="35" y2="0" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                            <line x1="-42" y1="0" x2="-35" y2="0" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+                            <text x="0" y="-29" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.65)" font-weight="700" font-family="Inter,sans-serif">N</text>
+                            <text x="0" y="38"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">S</text>
+                            <text x="37" y="3"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">E</text>
+                            <text x="-37" y="3" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">W</text>
+                            <g id="compassGroup" style="transition:transform 1.6s cubic-bezier(0.34,1.1,0.64,1)">
+                                <line x1="0" y1="-27" x2="0" y2="0"  stroke="#f87171" stroke-width="2.5" stroke-linecap="round"/>
+                                <line x1="0" y1="0"   x2="0" y2="17" stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/>
+                            </g>
+                            <circle r="3.5" fill="white" fill-opacity="0.9"/>
+                        </svg>
+                        <div class="text-center leading-tight">
+                            <div id="wxWindKt" class="text-[17px] font-bold text-sky-300 tabular-nums" style="text-shadow:0 0 16px rgba(125,211,252,0.65)">— kt</div>
+                            <div id="wxWindDir" class="text-xs text-white/45">—</div>
+                            <div id="wxGustKt" class="text-[10px] text-white/30 mt-0.5">gust — kt</div>
+                        </div>
+                    </div>
+
+                    <!-- Rain -->
+                    <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
+                        <div class="text-[10px] text-white/35 tracking-widest">RAIN</div>
+                        <div class="rain-wrap w-full" id="rainWrap"></div>
+                        <div class="text-center leading-tight mt-1">
+                            <div id="wxPrecip" class="text-[17px] font-bold text-blue-300 tabular-nums">—</div>
+                            <div class="text-[10px] text-white/30" id="wxPrecipPeriod">per 10 min</div>
+                            <div id="wxRainStatus" class="text-xs text-white/45 mt-0.5">—</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- RADIATION (2 cols) -->
+            <div class="card rounded-3xl p-5 card-accent-yellow lg:col-span-2">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2.5">
+                        <div class="text-4xl" style="filter:drop-shadow(0 0 16px rgba(253,224,71,0.65))">☀️</div>
+                        <div>
+                            <div class="text-[15px] font-bold">Solar Radiation</div>
+                            <div class="text-[11px] text-yellow-200 mt-0.5">from KNMI Bonaire</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-end justify-between">
+                    <div class="flex-1">
+                        <div id="wxRadiation" class="text-6xl font-bold text-yellow-300 tabular-nums" style="text-shadow:0 0 40px rgba(253,224,71,0.8), 0 0 20px rgba(253,224,71,0.5); line-height:1">— W/m²</div>
+                        <div class="text-[11px] text-white/35 mt-2">solar irradiance</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="flex flex-col items-end gap-2">
+                            <div class="flex items-baseline gap-2">
+                                <span id="wxUvNum" class="text-3xl font-bold text-green-400 tabular-nums">—</span>
+                                <span class="text-[12px] text-white/50">UV INDEX</span>
+                            </div>
+                            <div class="relative w-32 h-2.5">
+                                <div class="uv-track" style="height:100%; border-radius:2px"></div>
+                                <div id="uvCursor" class="uv-cursor" style="left:0%; top:50%; transform:translateY(-50%)"></div>
+                            </div>
+                            <div id="wxUvLabel" class="text-[11px] font-semibold text-green-400">—</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PROJECTED FULL DAY ═══ -->
+            <div class="card rounded-2xl p-3 card-accent-purple lg:col-span-2">
+                <div class="text-[10px] text-purple-300/70 tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fas fa-wand-magic-sparkles text-[9px]"></i>
+                    PROJECTED FULL DAY
+                    <span id="projAcTag" class="ml-auto text-[9px] text-white/25"></span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div>
+                        <div class="text-[11px] font-bold text-emerald-400 tabular-nums" id="projSolar">—</div>
+                        <div class="text-[9px] text-white/30 mt-0.5">Solar</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-orange-400 tabular-nums" id="projUsage">—</div>
+                        <div class="text-[9px] text-white/30 mt-0.5">Usage</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-red-400 tabular-nums" id="projImport">—</div>
+                        <div class="text-[9px] text-white/30 mt-0.5">Import</div>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-emerald-300 tabular-nums" id="projExport">—</div>
+                        <div class="text-[9px] text-white/30 mt-0.5">Export</div>
+                    </div>
+                </div>
+                <div class="mt-2 text-center text-[10px] text-white/30">
+                    Cost ~<span id="projCost" class="text-yellow-400 font-semibold">—</span> XCG
+                    <span class="mx-1.5 text-white/15">·</span>
+                    <span id="projSelfSuf" class="text-emerald-400 font-semibold">—</span> self-sufficient
+                </div>
+            </div>
+
+            <!-- SOLAR (2 cols) -->
+            <div class="card rounded-3xl p-5 card-accent-green lg:col-span-2" id="solarCard">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="text-4xl" style="filter:drop-shadow(0 0 10px rgba(250,200,0,0.5))">🌞</div>
+                        <div>
+                            <div class="text-[15px] font-bold">Solar PV</div>
+                            <div id="solarSource" class="text-[11px] text-emerald-400 mt-0.5">From KNMI radiation</div>
+                        </div>
+                    </div>
+                    <!-- Ring gauge -->
+                    <div class="relative" style="width:74px;height:74px">
+                        <svg viewBox="0 0 80 80" width="74" height="74">
+                            <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="7"/>
+                            <circle id="solarArc" cx="40" cy="40" r="32" fill="none"
+                                    stroke="#34d399" stroke-width="7" stroke-linecap="round"
+                                    stroke-dasharray="201" stroke-dashoffset="201"
+                                    transform="rotate(-90 40 40)"/>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <div id="solarPctLabel" class="text-[13px] font-bold text-emerald-400 tabular-nums">0%</div>
+                            <div class="text-[9px] text-white/35">peak</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-end justify-between mb-3">
+                    <div>
+                        <div id="solar" class="text-4xl font-bold text-emerald-400 tabular-nums" style="text-shadow:0 0 24px rgba(52,211,153,0.45)">0 W</div>
+                        <div class="text-xs text-white/40 mt-1">of <span id="solarPeakLabel" class="text-white/60">920 W</span> peak</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="dailySolar" class="text-2xl font-bold text-emerald-300 tabular-nums">0.0 kWh</div>
+                        <div class="text-xs text-white/40">today</div>
+                    </div>
+                </div>
+
+                <!-- Sparkline -->
+                <div class="flex items-end gap-[2px] h-10 mb-4" id="solarHistBars"></div>
+
+                <!-- Manual override -->
+                <div class="bg-white/[0.04] rounded-2xl p-3 border border-white/[0.07]">
+                    <div class="text-[11px] text-white/40 mb-2 flex items-center gap-2">
+                        <i class="fas fa-pen-to-square text-emerald-400 text-xs"></i>
+                        OVERRIDE WITH YOUR INVERTER READING
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <input id="solarManualInput" type="number" min="0" max="20000" step="1"
+                               placeholder="Current watts e.g. 500"
+                               class="solar-input rounded-xl px-3 py-2 text-sm flex-1 min-w-[120px]">
+                        <button onclick="applyManualSolar()"
+                                class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-900 hover:opacity-90 transition-all"
+                                style="background:linear-gradient(to right,#34d399,#22d3ee)">
+                            <i class="fas fa-check mr-1"></i>Update
+                        </button>
+                        <button onclick="clearManualSolar()"
+                                class="px-4 py-2 rounded-xl bg-white/10 text-sm font-semibold hover:bg-white/15 transition-all">
+                            <i class="fas fa-rotate mr-1"></i>Auto
+                        </button>
+                    </div>
+                    <div id="solarManualInfo" class="text-[11px] text-white/35 mt-2">Using KNMI radiation to calculate panel output.</div>
+
+                    <!-- Daily kWh input -->
+                    <div class="mt-3 pt-3 border-t border-white/[0.05]">
+                        <div class="text-[11px] text-white/40 mb-2 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-emerald-400 text-xs"></i>
+                            ACTUAL DAILY PRODUCTION (for stats)
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <input id="solarDailyInput" type="number" min="0" max="50" step="0.1"
+                                   placeholder="e.g. 0.8 kWh"
+                                   class="solar-input rounded-xl px-3 py-2 text-sm flex-1 min-w-[120px]">
+                            <button onclick="setSolarDaily()"
+                                    class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-900 hover:opacity-90 transition-all"
+                                    style="background:linear-gradient(to right,#34d399,#22d3ee)">
+                                <i class="fas fa-floppy-disk mr-1"></i>Save
+                            </button>
+                            <button onclick="clearSolarDaily()"
+                                    class="px-4 py-2 rounded-xl bg-white/10 text-sm font-semibold hover:bg-white/15 transition-all">
+                                <i class="fas fa-xmark mr-1"></i>Clear
+                            </button>
+                        </div>
+                        <div id="solarDailyInfo" class="text-[11px] text-white/35 mt-2">Calculated: 0.0 kWh</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INDOOR -->
+            <div class="card rounded-3xl p-4 card-accent-orange">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="text-3xl">🌡️</div>
+                    <div>
+                        <div class="text-[15px] font-bold">Indoor</div>
+                        <div class="text-[11px] text-amber-400">Temperature</div>
+                    </div>
+                </div>
+                <div id="indoor" class="text-4xl font-bold text-amber-400 tabular-nums" style="text-shadow:0 0 20px rgba(251,191,36,0.35)">—°C</div>
+                <div id="setpointLabel" class="text-[11px] text-white/45 mt-1">Setpoint: 28.0°C</div>
+                <div class="mt-3 bg-white/[0.04] rounded-xl p-3 space-y-2 border border-white/[0.06]">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-white/45">Outdoor feels like</span>
+                        <span id="outdoor" class="font-semibold tabular-nums">—°C</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-white/45">∆ vs setpoint</span>
+                        <span id="indoorDelta" class="font-semibold tabular-nums">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AC LOAD -->
+            <div class="card rounded-3xl p-4 card-accent-cyan" id="acCard">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="text-3xl">❄️</div>
+                    <div>
+                        <div class="text-[15px] font-bold">AC Load</div>
+                        <div id="acModeLabel" class="text-[11px] text-cyan-400">ON · 28°C</div>
+                    </div>
+                </div>
+                <div id="ac" class="text-4xl font-bold text-cyan-400 tabular-nums" style="text-shadow:0 0 20px rgba(34,211,238,0.3)">0 W</div>
+                <div class="flex items-center gap-2 mt-3">
+                    <div class="h-2 flex-1 bg-white/10 rounded-full overflow-hidden">
+                        <div id="acBar" class="h-full w-0 rounded-full transition-all duration-700"></div>
+                    </div>
+                    <span id="acPct" class="text-[11px] font-mono text-white/55 w-8 text-right tabular-nums">0%</span>
+                </div>
+                <div id="acEffLabel" class="text-[11px] text-white/35 mt-1">Standby</div>
+                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
+                    <span class="text-white/45">Est. today</span>
+                    <span id="acDaily" class="font-bold text-cyan-400 tabular-nums">0.0 kWh</span>
+                </div>
+            </div>
+
+            <!-- FRIDGE -->
+            <div class="card rounded-3xl p-4 card-accent-blue">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="text-3xl">🧊</div>
+                    <div>
+                        <div class="text-[15px] font-bold">Small Fridge</div>
+                        <div class="text-[11px] text-blue-300 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
+                            ALWAYS ON · 24H
+                        </div>
+                    </div>
+                </div>
+                <div id="fridge" class="text-4xl font-bold text-blue-300 tabular-nums">0 W</div>
+                <div id="fridgeState" class="text-[11px] text-white/45 mt-1">Compressor running</div>
+                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
+                    <span class="text-white/45">~ per day</span>
+                    <span id="fridgeDaily" class="font-bold text-blue-300 tabular-nums">2.0 kWh</span>
+                </div>
+            </div>
+
+            <!-- OTHER -->
+            <div class="card rounded-3xl p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="text-3xl">💡</div>
+                    <div>
+                        <div class="text-[15px] font-bold">Other Loads</div>
+                        <div class="text-[11px] text-white/40">Lights · WiFi · Standby</div>
+                    </div>
+                </div>
+                <div id="other" class="text-4xl font-bold text-white/75 tabular-nums">0 W</div>
+                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
+                    <span class="text-white/45">~ per day</span>
+                    <span id="otherDaily" class="font-bold text-white/60 tabular-nums">1.0 kWh</span>
+                </div>
+            </div>
+
+            <!-- HOUSE TOTAL -->
+            <div class="card rounded-3xl p-4 card-accent-orange">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="text-3xl">🏠</div>
+                    <div>
+                        <div class="text-[15px] font-bold">House Total</div>
+                        <div class="text-[11px] text-orange-300">All loads</div>
+                    </div>
+                </div>
+                <div id="houseTotal" class="text-4xl font-bold text-orange-300 tabular-nums">0 W</div>
+                <div class="mt-3 space-y-2 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="text-cyan-400">❄️ AC</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div id="bdAcBar" class="h-full bg-cyan-400 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="bdAc" class="font-mono w-12 text-right tabular-nums">0 W</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-blue-300">🧊 Fridge</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div id="bdFridgeBar" class="h-full bg-blue-300 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="bdFridge" class="font-mono w-12 text-right tabular-nums">0 W</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-white/50">💡 Other</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 sm:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div id="bdOtherBar" class="h-full bg-white/40 rounded-full transition-all duration-700" style="width:0%"></div>
+                            </div>
+                            <span id="bdOther" class="font-mono w-12 text-right tabular-nums">0 W</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRID (2 cols) -->
+            <div class="card rounded-3xl p-4 lg:col-span-2" id="gridCard">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="text-3xl">🔌</div>
+                        <div>
+                            <div class="text-[15px] font-bold">Grid Net</div>
+                            <div id="status" class="text-[11px] font-medium mt-0.5">—</div>
+                        </div>
+                    </div>
+                    <div id="grid" class="text-4xl font-bold text-emerald-400 tabular-nums">0 W</div>
+                </div>
+                <div class="flex gap-3 mt-4">
+                    <div class="flex-1 rounded-2xl py-4 text-center" style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15)">
+                        <div class="text-[11px] text-emerald-400 tracking-widest mb-1" aria-label="Exporting to grid">↑ EXPORT</div>
+                        <div id="export" class="text-2xl font-bold text-emerald-400 tabular-nums" aria-live="polite">0 W</div>
+                    </div>
+                    <div class="flex-1 rounded-2xl py-4 text-center" style="background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.15)">
+                        <div class="text-[11px] text-red-400 tracking-widest mb-1" aria-label="Importing from grid">↓ IMPORT</div>
+                        <div id="import" class="text-2xl font-bold text-red-400 tabular-nums" aria-live="polite">0 W</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DAILY COST -->
+            <div class="card rounded-3xl p-4 card-accent-yellow">
+                <div class="flex items-center gap-3 mb-3">
+                    <i class="fas fa-coins text-3xl text-yellow-400"></i>
+                    <div>
+                        <div class="text-[15px] font-bold">Today's Cost</div>
+                        <div id="rateLabel" class="text-[11px] text-white/40">0.68 XCG/kWh</div>
+                    </div>
+                </div>
+                <div id="daily" class="text-4xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
+                <div id="dailyTrend" class="text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1.5"></div>
+            </div>
+
+            <!-- MONTHLY -->
+            <div class="card rounded-3xl p-4 card-accent-purple">
+                <div class="mb-3">
+                    <div class="text-[15px] font-bold">30-Day Projection</div>
+                    <div class="text-[11px] text-white/40">based on today's rate</div>
+                </div>
+                <div id="monthly" class="text-4xl font-bold text-purple-400 tabular-nums">0.0 XCG</div>
+                <div class="mt-4 flex items-center gap-2 text-xs">
+                    <div class="px-2.5 py-1 bg-white/08 rounded-full border border-white/10 text-white/50">VS 26°C</div>
+                    <div id="savings" class="font-bold text-emerald-400">0 XCG saved</div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ═══ STATISTICS SECTION ═══ -->
+        <div class="card rounded-3xl p-5 card-accent-purple">
+
+            <!-- Header + tabs -->
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-chart-bar text-purple-400"></i>
+                    <span class="text-[15px] font-bold">Energy Statistics</span>
+                </div>
+                <div class="inline-flex bg-white/[0.05] rounded-2xl p-1 gap-1 border border-white/[0.08]">
+                    <button id="tabDay"   onclick="setStatsTab('day')"   class="stats-tab-active px-4 py-1.5 rounded-xl text-xs font-semibold transition-all">Today</button>
+                    <button id="tabWeek"  onclick="setStatsTab('week')"  class="px-4 py-1.5 rounded-xl text-xs font-semibold text-white/50 transition-all">7 Days</button>
+                    <button id="tabMonth" onclick="setStatsTab('month')" class="px-4 py-1.5 rounded-xl text-xs font-semibold text-white/50 transition-all">30 Days</button>
+                </div>
+            </div>
+
+            <!-- TODAY -->
+            <div id="statsDay">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
+                        <div id="stTodaySolar" class="text-xl font-bold text-emerald-400 tabular-nums">0.0 kWh</div>
+                        <div id="stTodaySolarVsYest" class="text-[11px] text-white/40 mt-0.5">vs yesterday —</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 COST</div>
+                        <div id="stTodayCost" class="text-xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
+                        <div id="stTodayCostVsYest" class="text-[11px] text-white/40 mt-0.5">vs yesterday —</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">⬆️ EXPORT</div>
+                        <div id="stTodayExport" class="text-xl font-bold text-emerald-300 tabular-nums">0.0 kWh</div>
+                        <div class="text-[11px] text-white/40 mt-0.5">to grid today</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">⬇️ IMPORT</div>
+                        <div id="stTodayImport" class="text-xl font-bold text-red-400 tabular-nums">0.0 kWh</div>
+                        <div class="text-[11px] text-white/40 mt-0.5">from grid today</div>
+                    </div>
+                </div>
+                <!-- AC / Fridge / Other breakdown for today -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">❄️ AC</div>
+                        <div id="stTodayAc" class="text-lg font-bold text-cyan-400 tabular-nums">0.0 kWh</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">🧊 FRIDGE</div>
+                        <div id="stTodayFridge" class="text-lg font-bold text-blue-300 tabular-nums">2.0 kWh</div>
+                    </div>
+                    <div class="stat-tile">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💡 OTHER</div>
+                        <div id="stTodayOther" class="text-lg font-bold text-white/60 tabular-nums">1.0 kWh</div>
+                    </div>
+                </div>
+
+                <!-- Self-sufficiency banner -->
+                <div class="mt-3 rounded-xl px-3 py-2 flex items-center justify-between" style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15)">
+                    <span class="text-[10px] text-white/35 tracking-widest">⚡ SELF-SUFFICIENCY</span>
+                    <span id="stTodaySelfSuf" class="text-[13px] font-bold text-emerald-400">— %</span>
+                </div>
+
+                <!-- Daily meter readings for stats override -->
+                <div class="rounded-2xl p-3 mt-4" style="background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.28)">
+                    <div class="text-[12px] font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-meter text-purple-400"></i>
+                        DAILY METER READINGS
+                        <span class="text-[10px] font-normal text-white/35 ml-1">overrides estimates</span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <!-- Total usage -->
+                        <div>
+                            <div class="text-[11px] text-white/60 mb-1.5 tracking-wide font-medium">⚡ TOTAL USAGE (kWh consumed today)</div>
+                            <div class="flex gap-2">
+                                <input id="dailyUsageInput" type="number" min="0" max="200" step="0.1"
+                                       placeholder="e.g. 12.5 kWh"
+                                       aria-label="Total daily usage in kWh"
+                                       oninput="previewSelfSufficiency()"
+                                       class="solar-input rounded-xl px-3 py-2 text-sm flex-1 min-w-0">
+                                <button onclick="setDailyUsage()" aria-label="Save total usage"
+                                        class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-900 hover:opacity-90 transition-all whitespace-nowrap"
+                                        style="background:linear-gradient(to right,#a78bfa,#22d3ee)">
+                                    <i class="fas fa-floppy-disk mr-1"></i>Save
+                                </button>
+                                <button onclick="clearDailyUsage()" aria-label="Clear usage"
+                                        class="px-3 py-2 rounded-xl bg-white/10 text-xs font-semibold hover:bg-white/15 transition-all">
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div id="dailyUsageInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                        </div>
+                        <!-- Grid import -->
+                        <div>
+                            <div class="text-[11px] text-white/60 mb-1.5 tracking-wide font-medium">↓ GRID IMPORT (kWh from meter)</div>
+                            <div class="flex gap-2">
+                                <input id="dailyImportInput" type="number" min="0" max="100" step="0.1"
+                                       placeholder="e.g. 5.5 kWh"
+                                       aria-label="Grid import in kWh"
+                                       oninput="previewSelfSufficiency()"
+                                       class="solar-input rounded-xl px-3 py-2 text-sm flex-1 min-w-0">
+                                <button onclick="setDailyImport()" aria-label="Save import"
+                                        class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-900 hover:opacity-90 transition-all whitespace-nowrap"
+                                        style="background:linear-gradient(to right,#34d399,#22d3ee)">
+                                    <i class="fas fa-floppy-disk mr-1"></i>Save
+                                </button>
+                                <button onclick="clearDailyImport()" aria-label="Clear import"
+                                        class="px-3 py-2 rounded-xl bg-white/10 text-xs font-semibold hover:bg-white/15 transition-all">
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div id="dailyImportInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                        </div>
+                        <!-- Grid export -->
+                        <div>
+                            <div class="text-[11px] text-white/60 mb-1.5 tracking-wide font-medium">⬆️ GRID EXPORT (kWh sent to grid)</div>
+                            <div class="flex gap-2">
+                                <input id="dailyExportInput" type="number" min="0" max="100" step="0.1"
+                                       placeholder="e.g. 3.5 kWh"
+                                       aria-label="Grid export in kWh"
+                                       class="solar-input rounded-xl px-3 py-2 text-sm flex-1 min-w-0">
+                                <button onclick="setDailyExport()" aria-label="Save export"
+                                        class="px-3 py-2 rounded-xl text-xs font-semibold text-slate-900 hover:opacity-90 transition-all whitespace-nowrap"
+                                        style="background:linear-gradient(to right,#34d399,#22d3ee)">
+                                    <i class="fas fa-floppy-disk mr-1"></i>Save
+                                </button>
+                                <button onclick="clearDailyExport()" aria-label="Clear export"
+                                        class="px-3 py-2 rounded-xl bg-white/10 text-xs font-semibold hover:bg-white/15 transition-all">
+                                    <i class="fas fa-xmark"></i>
+                                </button>
+                            </div>
+                            <div id="dailyExportInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                            <div id="exportIfAcOff" class="text-[10px] text-emerald-300/70 mt-1">If AC OFF: ~0.0 kWh export</div>
+                        </div>
+                        <!-- Preview -->
+                        <div id="meterPreview" class="hidden text-[11px] text-emerald-300 rounded-xl px-3 py-2" style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.18)">
+                            Preview: <span id="meterPreviewText">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7 DAYS -->
+            <div id="statsWeek" class="hidden">
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ 7-DAY SOLAR</div>
+                        <div id="st7Solar" class="text-xl font-bold text-emerald-400 tabular-nums">— kWh</div>
+                    </div>
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 7-DAY COST</div>
+                        <div id="st7Cost" class="text-xl font-bold text-yellow-400 tabular-nums">— XCG</div>
+                    </div>
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">📊 DAILY AVG</div>
+                        <div id="st7Avg" class="text-xl font-bold text-purple-400 tabular-nums">— kWh</div>
+                    </div>
+                </div>
+                <!-- 7-day chart -->
+                <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
+                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-white/35">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-emerald-400 inline-block"></span>Solar</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-orange-400 inline-block"></span>Usage</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-400 inline-block"></span>Import</span>
+                        <span class="ml-auto text-white/25">kWh/day</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col justify-between text-[9px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
+                            <span>10</span><span>5</span><span>0</span>
+                        </div>
+                        <div class="flex-1 relative h-44">
+                            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                                <div class="border-t border-white/[0.06]"></div>
+                                <div class="border-t border-white/[0.06]"></div>
+                                <div class="border-t border-white/[0.06]"></div>
+                            </div>
+                            <div class="flex gap-1 h-full items-end relative" id="chart7Bars"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 30 DAYS -->
+            <div id="statsMonth" class="hidden">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
+                        <div id="st30Solar" class="text-xl font-bold text-emerald-400 tabular-nums">— kWh</div>
+                    </div>
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 TOTAL COST</div>
+                        <div id="st30Cost" class="text-xl font-bold text-yellow-400 tabular-nums">— XCG</div>
+                    </div>
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">🏆 BEST DAY</div>
+                        <div id="st30Best" class="text-xl font-bold text-emerald-300 tabular-nums">— kWh</div>
+                    </div>
+                    <div class="stat-tile text-center">
+                        <div class="text-[10px] text-white/35 tracking-widest mb-1">📉 WORST DAY</div>
+                        <div id="st30Worst" class="text-xl font-bold text-red-400 tabular-nums">— kWh</div>
+                    </div>
+                </div>
+                <!-- 30-day chart -->
+                <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
+                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-white/35">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-emerald-400 inline-block"></span>Solar</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-orange-400 inline-block"></span>Usage</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-400 inline-block"></span>Import</span>
+                        <span class="ml-auto text-white/25">kWh/day</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex flex-col justify-between text-[9px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
+                            <span>10</span><span>5</span><span>0</span>
+                        </div>
+                        <div class="flex-1 relative h-44">
+                            <div class="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                                <div class="border-t border-white/[0.06]"></div>
+                                <div class="border-t border-white/[0.06]"></div>
+                                <div class="border-t border-white/[0.06]"></div>
+                            </div>
+                            <div class="flex gap-px h-full items-end relative" id="chart30Bars"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /stats -->
+
+        <!-- ═══ AQUALECTRA BILLS ═══ -->
+        <div class="card rounded-3xl p-5 card-accent-yellow">
+            <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-invoice text-yellow-400"></i>
+                    <span class="text-[15px] font-bold">Aqualectra Bills</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportBillsCSV()" aria-label="Export bills as CSV"
+                            class="px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/60 hover:bg-white/10 transition-all border border-white/10">
+                        <i class="fas fa-file-csv"></i>
+                    </button>
+                    <button onclick="addBillManually()" aria-label="Add bill manually"
+                            class="px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/70 hover:bg-white/10 transition-all border border-white/10">
+                        <i class="fas fa-keyboard mr-1.5"></i>Manual
+                    </button>
+                    <button onclick="document.getElementById('billFile').click()" aria-label="Upload receipt photo"
+                            class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-900 hover:opacity-90 transition-all"
+                            style="background:linear-gradient(to right,#fbbf24,#f59e0b)">
+                        <i class="fas fa-camera mr-1.5"></i>Upload receipt
+                    </button>
+                </div>
+            </div>
+            <div class="text-[11px] text-white/35 mb-3">Photograph your bill — the numbers are read on your phone (nothing is sent anywhere), you confirm, and each month is stored below.</div>
+            <input id="billFile" type="file" accept="image/*" class="hidden" onchange="handleBillFile(this.files[0]);this.value=''">
+            <div id="billOcrStatus" class="hidden mb-3 rounded-xl px-3 py-2.5 text-[12px] font-semibold text-yellow-300 text-center" style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25)"></div>
+            <div id="billInsights" class="hidden mb-3 rounded-xl px-3 py-2.5 text-[12px] text-white/60" style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.18)"></div>
+            <div id="billsList" class="space-y-2"></div>
+        </div>
+
+    </div><!-- /container -->
+
+    <div class="text-center text-[11px] text-white/20 pb-6">
+        Weather · KNMI Bonaire / Open-Meteo Curaçao · Solar PV from measured radiation
     </div>
 
-  </div>
-
-  <footer>
-    <span class="footer-note">↑ iframes refresh by src reassignment — no params mutated</span>
-    <span class="shortcut-hint"><kbd>R</kbd> refresh &nbsp;·&nbsp; <kbd>Space</kbd> auto &nbsp;·&nbsp; <kbd>L</kbd> lock</span>
-  </footer>
-
-</div>
+</div><!-- /above-bg -->
+<div id="autoSaveToast">✓ Daily stats auto-saved at 6 PM</div>
 
 <script>
-(function () {
-  'use strict';
+/* ═══════════════════════════════════════════════════════
+   KNMI BONAIRE SCRAPER
+═══════════════════════════════════════════════════════ */
+const KNMI_URL='https://www.knmidc.org/weather/bonaire/?Current';
+let _wxCacheTs=null; // timestamp of the weather data currently on screen
 
-  // ── Config ──────────────────────────────────────────────────────────────
-  const FRAMES = [
-    { frameId: 'f1', cardId: 'card1', tsId: 'ts1',
-      src: 'https://www.ventusky.com/precipitation-map/3-hours#p=12.17;-69.02;5&m=harmonie_car&w=off' },
-    { frameId: 'f2', cardId: 'card2', tsId: 'ts2',
-      src: 'https://embed.windy.com/embed2.html?lat=12.305&lon=-68.928&zoom=7&level=surface&overlay=rain&product=aromeAntilles' },
-    { frameId: 'f3', cardId: 'card3', tsId: 'ts3',
-      src: 'https://www.ventusky.com/air-quality-map/dust#p=12.14;-70.03;4&w=off' },
-    { frameId: 'f4', cardId: 'card4', tsId: 'ts4',
-      src: 'https://embed.windy.com/embed2.html?lat=12.268&lon=-68.861&zoom=7&level=surface&overlay=radar' },
-    { frameId: 'f5', cardId: 'card5', tsId: 'ts5',
-      src: 'https://embed.windy.com/embed2.html?lat=12.14&lon=-68.918&zoom=7&level=surface&overlay=satellite&product=infra' },
-    { frameId: 'f6', cardId: 'card6', tsId: 'ts6',
-      src: 'https://globe.adsbexchange.com/?airport=tncc&zoom=8' },
-  ];
+// Race all 3 proxies in parallel — use whichever responds first (faster than sequential)
+function saveWeatherCache(data,src){
+    _wxCacheTs=Date.now();
+    try{localStorage.setItem('wxCache',JSON.stringify({data,src,ts:_wxCacheTs}));}catch(e){}
+}
+function loadWeatherCache(){
+    try{
+        const c=JSON.parse(localStorage.getItem('wxCache'));
+        if(c&&c.data&&c.data.temp_c!==null){
+            knmiData=c.data;_wxSrc=c.src||'cached';_wxCacheTs=c.ts;
+            applyKnmiUI(c.data,_wxSrc);
+            const age=Math.round((Date.now()-c.ts)/60000);
+            setKnmiStatus("ok",(c.src||'Weather')+(age>5?' ('+age+'m ago)':''));
+            return (Date.now()-c.ts)<20*60*1000; // return true if fresh (skip re-fetch)
+        }
+    }catch(e){}
+    return false;
+}
 
-  // ── Elements ─────────────────────────────────────────────────────────────
-  const intervalInput   = document.getElementById('interval');
-  const toggleBtn       = document.getElementById('toggleBtn');
-  const nowBtn          = document.getElementById('nowBtn');
-  const lockBtn         = document.getElementById('lockBtn');
-  const grid            = document.getElementById('grid');
-  const clockEl         = document.getElementById('clock');
-  const countdownWrap   = document.getElementById('countdownWrap');
-  const countdownText   = document.getElementById('countdownText');
-  const ring            = document.getElementById('ring');
-  const RING_CIRC       = 69.1; // 2π × r (r=11)
+async function fetchKnmiPage(){
+    const proxies=[
+        u=>'https://corsproxy.io/?url='+encodeURIComponent(u),
+        u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u),
+        u=>'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(u),
+        u=>'https://r.jina.ai/'+u,
+        u=>u
+    ];
+    try{
+        return await Promise.any(proxies.map(async w=>{
+            const c=new AbortController(),t=setTimeout(()=>c.abort(),2500);
+            try{
+                const r=await fetch(w(KNMI_URL),{signal:c.signal});clearTimeout(t);
+                if(!r.ok)throw new Error('!ok');
+                const x=await r.text();
+                if(!x||x.length<500)throw new Error('short');
+                return x;
+            }catch(e){clearTimeout(t);throw e;}
+        }));
+    }catch(e){return null;}
+}
 
-  // ── State ────────────────────────────────────────────────────────────────
-  let autoTimer    = null;
-  let countTimer   = null;
-  let running      = false;
-  let locked       = false;
-  let nextRefreshAt = null;
-  let intervalSec  = 300;
+// Open-Meteo: free, no API key, direct CORS, used as parallel fallback for Curaçao
+async function fetchOpenMeteo(){
+    try{
+        const url='https://api.open-meteo.com/v1/forecast?latitude=12.17&longitude=-68.99' +
+            '&current=temperature_2m,relative_humidity_2m,dew_point_2m,precipitation,' +
+            'wind_speed_10m,wind_direction_10m,wind_gusts_10m,cloud_cover,pressure_msl,shortwave_radiation' +
+            '&wind_speed_unit=kn&timezone=America%2FCuracao&forecast_days=1';
+        const c=new AbortController(),t=setTimeout(()=>c.abort(),3500);
+        const r=await fetch(url,{signal:c.signal});clearTimeout(t);
+        if(!r.ok)return null;
+        const j=await r.json(),cur=j.current;
+        if(!cur||cur.temperature_2m==null)return null;
+        return{
+            temp_c:cur.temperature_2m??null,
+            dew_c:cur.dew_point_2m??null,
+            rh:cur.relative_humidity_2m??null,
+            wind_kt:cur.wind_speed_10m!=null?Math.round(cur.wind_speed_10m):null,
+            gust_kt:cur.wind_gusts_10m!=null?Math.round(cur.wind_gusts_10m):null,
+            wind_dir:cur.wind_direction_10m??null,
+            wind_sector:null,
+            cloud_octa:cur.cloud_cover!=null?Math.round(cur.cloud_cover/12.5):null,
+            radiation:cur.shortwave_radiation??null,
+            precip_10m:cur.precipitation??null,
+            vis_m:null,
+            slp:cur.pressure_msl??null,
+            time:cur.time?cur.time.replace('T',' ')+' (Curaçao)':null,
+            ts:Date.now()
+        };
+    }catch(e){return null;}
+}
+function parseKnmiBonaire(raw){
+    if(!raw)return null;
+    var h=String(raw).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');
+    var o={},tm=h.match(/Bonaire<br\s*\/?>([^<]+UTC)/i);if(tm)o.time=tm[1].trim();
+    var re=/<td[^>]*>\s*<smalli>\s*([^<]+?)\s*<\/td>\s*<th[^>]*>\s*<center>\s*([^<]+?)\s*(?:<smalli>\s*([^<]*?)\s*(?:<\/smalli>)?)?\s*<\/th>/gi,m;
+    while((m=re.exec(h))!==null)o[m[1].replace(/&deg;/g,'°').replace(/\s+/g,' ').trim()]={value:(m[2]||'').replace(/&nbsp;/g,' ').trim(),extra:(m[3]||'').replace(/[()%]/g,'').trim()};
+    if(Object.keys(o).filter(k=>k!=='time').length>=3)return o;
+    var t=h.replace(/<[^>]+>/g,' ').replace(/&deg;/g,'°').replace(/&nbsp;/g,' ').replace(/\s+/g,' ');
+    [['Winddirection (Sector/deg)',/Winddirection[^A-Za-z]*\(?Sector\/deg\)?\s*([NESW]{1,3})\s*\(?\s*(\d{1,3})/i,true],['Windspeed (m/s)',/Windspeed[^0-9-]*([\d.]+)/i],['Gusts (m/s)',/Gusts[^0-9-]*([\d.]+)/i],['Cloud cover (Octa / %)',/Cloud cover[^0-9-]*([\d.]+)/i],['Radiation (W/m2)',/Radiation\s*\([^)]*\)\s*([\d.]+)/i],['Precipitation (mm/10 min)',/Precipitation\s*\([^)]*\)\s*([\d.]+)/i],['Relative humidity (%)',/Relative humidity[^0-9-]*([\d.]+)/i],['Temperature (°C)',/Temperature[^0-9-]*(-?[\d.]+)/i],['Dewpoint temperature (°C)',/Dewpoint[^0-9-]*(-?[\d.]+)/i],['Visibility (m)',/Visibility[^0-9-]*([\d.]+)/i],['Pressure (hPa)',/Pressure[^0-9-]*([\d.]+)/i]
+    ].forEach(p=>{var mm=t.match(p[1]);if(mm)o[p[0]]=p[2]?{value:mm[1],extra:mm[2]||''}:{value:mm[1],extra:''};});
+    if(!o.time){var tt=t.match(/Bonaire\s+([A-Za-z]{3},?\s+\d{1,2}\s+\w+\s+\d{4}\s+[\d:]+\s*UTC)/);if(tt)o.time=tt[1].trim();}
+    return o;
+}
+function knmiToNormalized(p){
+    if(!p)return null;
+    function find(s){for(var k in p){if(k.indexOf(s)>=0)return p[k];}return null;}
+    function num(r){if(!r||r.value==null)return null;var n=parseFloat(r.value);return isFinite(n)?n:null;}
+    var wm=num(find('Windspeed')),gm=num(find('Gusts')),wd=find('Winddirection');
+    return{temp_c:num(find('Temperature (')),dew_c:num(find('Dewpoint')),rh:num(find('Relative humidity')),wind_kt:wm!=null?Math.round(wm*1.94384):null,gust_kt:gm!=null?Math.round(gm*1.94384):null,wind_dir:wd&&wd.extra?parseFloat(wd.extra):null,wind_sector:wd?wd.value:null,cloud_octa:num(find('Cloud cover')),radiation:num(find('Radiation')),precip_10m:num(find('Precipitation')),vis_m:num(find('Visibility')),slp:num(find('Pressure')),time:p.time||null,ts:Date.now()};
+}
 
-  // ── Clock ────────────────────────────────────────────────────────────────
-  function tickClock() {
-    clockEl.textContent = new Date().toLocaleTimeString('en-US', {
-      hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'
+/* ═══════════════════════════════════════════════════════
+   SETTINGS — configurable, persisted to localStorage
+═══════════════════════════════════════════════════════ */
+const FRIDGE_IDLE_W=45, FRIDGE_DUTY=0.35, OTHER_BASE_W=42;
+// Reference AC model at a rated peak of 1280 W. Real units are scaled from
+// these ratios using the user's configured AC peak power (MAX_AC).
+const AC_REF_PEAK=1280;
+const AC_REF={26:{base:560,dailyKwh:7.4},27:{base:480,dailyKwh:6.1},28:{base:420,dailyKwh:5.0}};
+
+// User-configurable (defaults below). Mutated by the Settings panel.
+let RATE=0.68;          // import price XCG/kWh
+let EXPORT_RATE=0.27;   // feed-in credit XCG/kWh
+let MAX_SOLAR=920;      // panel peak W
+let FRIDGE_RUN_W=150;   // fridge compressor running W
+let MAX_AC=1280;        // AC peak/rated power W
+
+// Derived — recomputed whenever settings change
+let PANEL_EFF, FRIDGE_DAILY, OTHER_DAILY, AC_PROFILES={};
+function recomputeDerived(){
+    PANEL_EFF=MAX_SOLAR/1000*0.82;
+    FRIDGE_DAILY=(FRIDGE_RUN_W*FRIDGE_DUTY+FRIDGE_IDLE_W*(1-FRIDGE_DUTY))*24/1000;
+    OTHER_DAILY=OTHER_BASE_W*24/1000;
+    // Scale the AC steady-state power and daily-kWh estimates to the user's unit
+    const f=MAX_AC/AC_REF_PEAK;
+    AC_PROFILES={};
+    [26,27,28].forEach(t=>{AC_PROFILES[t]={base:Math.round(AC_REF[t].base*f),dailyKwh:+(AC_REF[t].dailyKwh*f).toFixed(1)};});
+}
+function loadSettings(){
+    try{
+        const s=JSON.parse(localStorage.getItem("powerSettings"));
+        if(s){
+            if(s.RATE>0)RATE=s.RATE;
+            if(s.EXPORT_RATE>=0)EXPORT_RATE=s.EXPORT_RATE;
+            if(s.MAX_SOLAR>0)MAX_SOLAR=s.MAX_SOLAR;
+            if(s.FRIDGE_RUN_W>0)FRIDGE_RUN_W=s.FRIDGE_RUN_W;
+            if(s.MAX_AC>0)MAX_AC=s.MAX_AC;
+        }
+    }catch(e){}
+    recomputeDerived();
+    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+}
+function saveSettings(){
+    RATE=Math.max(0,parseFloat(document.getElementById("setRate").value)||RATE);
+    EXPORT_RATE=Math.max(0,parseFloat(document.getElementById("setExport").value)||0);
+    MAX_SOLAR=Math.max(100,parseFloat(document.getElementById("setPeak").value)||MAX_SOLAR);
+    FRIDGE_RUN_W=Math.max(20,parseFloat(document.getElementById("setFridge").value)||FRIDGE_RUN_W);
+    MAX_AC=Math.max(300,parseFloat(document.getElementById("setAcPeak").value)||MAX_AC);
+    try{localStorage.setItem("powerSettings",JSON.stringify({RATE,EXPORT_RATE,MAX_SOLAR,FRIDGE_RUN_W,MAX_AC}));}catch(e){}
+    recomputeDerived();
+    // Refresh derived labels
+    const pl=document.getElementById("solarPeakLabel"); if(pl)pl.innerText=MAX_SOLAR+" W";
+    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+    // Show save confirmation then close
+    const sv=document.getElementById("settingsSaved");
+    if(sv){sv.classList.remove("hidden");setTimeout(()=>{sv.classList.add("hidden");closeSettings();},900);}
+    else closeSettings();
+    update();
+}
+function openSettings(){
+    document.getElementById("setRate").value=RATE;
+    document.getElementById("setExport").value=EXPORT_RATE;
+    document.getElementById("setPeak").value=MAX_SOLAR;
+    document.getElementById("setFridge").value=FRIDGE_RUN_W;
+    document.getElementById("setAcPeak").value=MAX_AC;
+    document.getElementById("settingsOverlay").classList.remove("hidden");
+}
+function closeSettings(){ document.getElementById("settingsOverlay").classList.add("hidden"); }
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let acMode=true, setpoint=26, indoor=26.0;
+let dailySolarKwh=0, dailyAcKwh=0, dailyImportKwh=0, dailyExportKwh=0;
+let actualDailySolarKwh=null; // user-entered actual solar production for stats
+let actualDailyImportKwh=null; // user-entered actual import for stats
+let actualDailyUsageKwh=null;  // user-entered actual total usage for stats
+let actualDailyExportKwh=null; // user-entered actual export for stats
+let _autoSavedDate=null;       // tracks which day the 6pm auto-save already ran
+let _runningDay=new Date().toDateString(); // day the live counters belong to
+let knmiData=null, manualSolarW=null, manualSolarTime=null;
+let solarHistory=new Array(20).fill(0);
+let statsData=[];
+let currentStatsTab='day';
+
+/* ═══════════════════════════════════════════════════════
+   PERSISTENCE — APP STATE
+═══════════════════════════════════════════════════════ */
+function saveState(){
+    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,day:new Date().toDateString()}));}catch(e){}
+}
+function loadState(){
+    try{
+        const s=JSON.parse(localStorage.getItem("powerDash"));if(!s)return;
+        acMode=[true,false].includes(s.acMode)?s.acMode:true;
+        setpoint=[26,27,28].includes(s.setpoint)?s.setpoint:26;
+        if(s.day===new Date().toDateString()){
+            // Same day — restore running counters
+            dailySolarKwh=s.dailySolarKwh||0;dailyAcKwh=s.dailyAcKwh||0;
+            dailyImportKwh=s.dailyImportKwh||0;dailyExportKwh=s.dailyExportKwh||0;
+            actualDailySolarKwh=typeof s.actualDailySolarKwh==='number'?s.actualDailySolarKwh:null;
+            actualDailyImportKwh=typeof s.actualDailyImportKwh==='number'?s.actualDailyImportKwh:null;
+            actualDailyUsageKwh=typeof s.actualDailyUsageKwh==='number'?s.actualDailyUsageKwh:null;
+            actualDailyExportKwh=typeof s.actualDailyExportKwh==='number'?s.actualDailyExportKwh:null;
+            _autoSavedDate=s._autoSavedDate||null;
+            if(typeof s.manualSolarW==='number'){manualSolarW=s.manualSolarW;manualSolarTime=s.manualSolarTime||Date.now();}
+        } else if(s.day && (s.dailySolarKwh||0)>0){
+            // Day rolled over — archive the previous day before counters reset to 0
+            archiveDaySnapshot(s.day,s.dailySolarKwh||0,s.dailyAcKwh||0,s.dailyImportKwh||0,s.dailyExportKwh||0);
+        }
+    }catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════
+   PERSISTENCE — STATS
+═══════════════════════════════════════════════════════ */
+function loadStats(){
+    try{
+        const s=JSON.parse(localStorage.getItem("powerStats"));
+        if(s&&Array.isArray(s)&&s.length>0){
+            // Backfill total_kwh on rows saved before it existed, so the
+            // Usage bar doesn't render as a 2px sliver for those days.
+            s.forEach(d=>{
+                if(d.total_kwh==null)d.total_kwh=+((d.ac_kwh||0)+(d.fridge_kwh||0)+(d.other_kwh||0)).toFixed(1);
+            });
+            statsData=s;return;
+        }
+    }catch(e){}
+    generateInitialStats();
+}
+function generateInitialStats(){
+    statsData=[];
+    for(let i=29;i>=1;i--){
+        const d=new Date(); d.setDate(d.getDate()-i);
+        const cloud=Math.random();
+        const sol=+(3.5+(1-cloud)*3.0+Math.random()*0.5).toFixed(1);
+        const ac=+(4.5+Math.random()*2.5).toFixed(1);
+        const total=ac+FRIDGE_DAILY+OTHER_DAILY;
+        const net=total-sol;
+        const imp=Math.max(0,net),exp=Math.max(0,-net);
+        statsData.push({date:d.toDateString(),solar_kwh:sol,import_kwh:+imp.toFixed(1),export_kwh:+exp.toFixed(1),ac_kwh:ac,fridge_kwh:+FRIDGE_DAILY.toFixed(1),other_kwh:+OTHER_DAILY.toFixed(1),total_kwh:+total.toFixed(1),cost_xcg:+(imp*RATE-exp*EXPORT_RATE).toFixed(2)});
+    }
+}
+function archiveDaySnapshot(date,solar,ac,imp,exp){
+    // Skip if already recorded
+    if(statsData.find(d=>d.date===date))return;
+    const snap={date,solar_kwh:+solar.toFixed(1),import_kwh:+imp.toFixed(1),export_kwh:+exp.toFixed(1),ac_kwh:+ac.toFixed(1),fridge_kwh:+FRIDGE_DAILY.toFixed(1),other_kwh:+OTHER_DAILY.toFixed(1),total_kwh:+(ac+FRIDGE_DAILY+OTHER_DAILY).toFixed(1),cost_xcg:+(imp*RATE-exp*EXPORT_RATE).toFixed(2)};
+    statsData.push(snap);
+    // Keep sorted oldest→newest, trim to 30
+    statsData.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    if(statsData.length>30)statsData.splice(0,statsData.length-30);
+    try{localStorage.setItem("powerStats",JSON.stringify(statsData));}catch(e){}
+}
+function saveStats(dateStr){
+    const today=dateStr||new Date().toDateString();
+    const solarVal=actualDailySolarKwh!==null?actualDailySolarKwh:dailySolarKwh;
+    const importVal=actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh;
+    const estUsage=dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY;
+    const totalUsage=actualDailyUsageKwh!==null?actualDailyUsageKwh:estUsage;
+    const exportVal=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,solarVal-totalUsage+importVal);
+    const snap={date:today,solar_kwh:+solarVal.toFixed(1),import_kwh:+importVal.toFixed(1),export_kwh:+exportVal.toFixed(1),ac_kwh:+dailyAcKwh.toFixed(1),fridge_kwh:+FRIDGE_DAILY.toFixed(1),other_kwh:+OTHER_DAILY.toFixed(1),total_kwh:+totalUsage.toFixed(1),cost_xcg:+(importVal*RATE-exportVal*EXPORT_RATE).toFixed(2)};
+    const idx=statsData.findIndex(d=>d.date===today);
+    if(idx>=0)statsData[idx]=snap; else statsData.push(snap);
+    if(statsData.length>30)statsData.splice(0,statsData.length-30);
+    try{localStorage.setItem("powerStats",JSON.stringify(statsData));}catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════════════════════ */
+function updateClock(){
+    const n=new Date();
+    document.getElementById("currentTime").innerText=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    document.getElementById("currentDate").innerText=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+
+/* ═══════════════════════════════════════════════════════
+   AC CONTROLS
+═══════════════════════════════════════════════════════ */
+function setMode(v){
+    acMode=v;
+    document.getElementById("onBtn").classList.toggle("tab-active",v);
+    document.getElementById("offBtn").classList.toggle("tab-active",!v);
+    document.getElementById("tempPicker").style.opacity=v?"1":"0.35";
+    document.getElementById("tempPicker").style.pointerEvents=v?"auto":"none";
+    updateAcLabels();saveState();update();
+}
+function setSetpoint(t){
+    setpoint=t;
+    [26,27,28].forEach(d=>document.getElementById("temp"+d).classList.toggle("temp-active",d===t));
+    updateAcLabels();saveState();update();
+}
+function updateAcLabels(){
+    document.getElementById("acModeLabel").innerText=acMode?`ON · ${setpoint}°C`:"OFF";
+    document.getElementById("setpointLabel").innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";
+}
+
+/* ═══════════════════════════════════════════════════════
+   MANUAL SOLAR
+═══════════════════════════════════════════════════════ */
+function applyManualSolar(){
+    const el=document.getElementById("solarManualInput"),v=parseFloat(el.value);
+    if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
+    manualSolarW=Math.round(v);manualSolarTime=Date.now();el.value="";saveState();update();
+}
+function clearManualSolar(){manualSolarW=null;manualSolarTime=null;saveState();update();}
+function setSolarDaily(){
+    const el=document.getElementById("solarDailyInput"),v=parseFloat(el.value);
+    if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
+    actualDailySolarKwh=Math.round(v*10)/10;el.value="";saveState();updateSolarDaily();update();
+}
+function clearSolarDaily(){actualDailySolarKwh=null;saveState();updateSolarDaily();update();}
+function updateSolarDaily(){
+    const info=document.getElementById("solarDailyInfo");
+    if(actualDailySolarKwh!==null){
+        info.innerText=`✓ Using actual: ${actualDailySolarKwh} kWh (calculated was ${dailySolarKwh.toFixed(1)} kWh)`;
+    } else {
+        info.innerText=`Calculated: ${dailySolarKwh.toFixed(1)} kWh`;
+    }
+}
+function setDailyUsage(){
+    const el=document.getElementById("dailyUsageInput"),v=parseFloat(el.value);
+    if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
+    actualDailyUsageKwh=Math.round(v*10)/10;el.dataset.manual="1";el.value="";saveState();updateDailyUsage();update();
+}
+function clearDailyUsage(){actualDailyUsageKwh=null;saveState();updateDailyUsage();update();}
+function updateDailyUsage(){
+    const est=dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY;
+    const info=document.getElementById("dailyUsageInfo");
+    if(actualDailyUsageKwh!==null){
+        const tag=_autoSavedDate===new Date().toDateString()&&!document.getElementById("dailyUsageInput").dataset.manual?
+            ' (auto)':' (entered)';
+        info.innerText=`✓ ${actualDailyUsageKwh} kWh${tag} — estimated was ${est.toFixed(1)} kWh`;
+    } else {
+        info.innerText=`Estimated: ${est.toFixed(1)} kWh — auto-saves at 6 PM`;
+    }
+}
+
+// ── Evening auto-save: locks in daily totals at 6 PM if user hasn't entered them ──
+function showAutoSaveToast(){
+    const el=document.getElementById("autoSaveToast");
+    el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"),4000);
+}
+function eveningAutoSave(){
+    const today=new Date().toDateString();
+    if(_autoSavedDate===today)return; // already done today
+    _autoSavedDate=today;
+    let changed=false;
+    if(actualDailyUsageKwh===null){
+        actualDailyUsageKwh=+Math.max(0,dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY).toFixed(1);
+        changed=true;
+    }
+    if(actualDailySolarKwh===null&&dailySolarKwh>0.05){
+        actualDailySolarKwh=+dailySolarKwh.toFixed(1);
+        changed=true;
+    }
+    if(actualDailyImportKwh===null&&dailyImportKwh>0.01){
+        actualDailyImportKwh=+dailyImportKwh.toFixed(1);
+        changed=true;
+    }
+    saveState(); saveStats();
+    updateSolarDaily(); updateDailyUsage(); updateDailyImport();
+    if(changed)showAutoSaveToast();
+}
+function checkEveningAutoSave(){
+    const now=new Date();
+    const localHour=((now.getUTCHours()-4)+24)%24+now.getUTCMinutes()/60;
+    if(localHour>=18)eveningAutoSave();
+}
+
+// ── Midnight rollover: the app stays open continuously (wake lock), so the
+// clock crosses midnight while running. Finalize the day that just ended and
+// reset the running counters so today doesn't inherit yesterday's totals. ──
+function checkDayRollover(){
+    const today=new Date().toDateString();
+    if(_runningDay===today)return;
+    saveStats(_runningDay); // commit the finished day's final snapshot
+    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
+    actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
+    _autoSavedDate=null;
+    const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
+    _runningDay=today;
+    saveState();
+    updateSolarDaily(); updateDailyImport(); updateDailyUsage(); updateDailyExport();
+}
+
+// ── Data utilities ──
+function exportStatsCSV(){
+    saveStats(); // make sure today's row reflects the latest before export
+    const cols=['date','solar_kwh','total_kwh','import_kwh','export_kwh','ac_kwh','fridge_kwh','other_kwh','cost_xcg'];
+    const rows=[cols.join(',')];
+    statsData.forEach(d=>rows.push(cols.map(c=>d[c]!==undefined&&d[c]!==null?d[c]:'').join(',')));
+    const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='powerdash-stats-'+new Date().toISOString().slice(0,10)+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function resetToday(){
+    if(!confirm("Reset today's data?\n\nThis zeroes today's running counters and clears any manual solar/usage/import/export entries for today. History for previous days is kept."))return;
+    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
+    actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
+    manualSolarW=null; manualSolarTime=null;
+    const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
+    // Drop today's snapshot from history so it rebuilds clean
+    const today=new Date().toDateString();
+    const idx=statsData.findIndex(d=>d.date===today);
+    if(idx>=0)statsData.splice(idx,1);
+    saveState(); saveStats();
+    updateSolarDaily(); updateDailyImport(); updateDailyUsage(); updateDailyExport(); updateSolarSourceUI();
+    update();
+    closeSettings();
+}
+function previewSelfSufficiency(){
+    const uVal=parseFloat(document.getElementById("dailyUsageInput").value);
+    const iVal=parseFloat(document.getElementById("dailyImportInput").value);
+    const usage=!isNaN(uVal)?uVal:(actualDailyUsageKwh!==null?actualDailyUsageKwh:(dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY));
+    const imp=!isNaN(iVal)?iVal:(actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh);
+    const pv=document.getElementById("meterPreview"),pt=document.getElementById("meterPreviewText");
+    if(pv&&pt&&(!isNaN(uVal)||!isNaN(iVal))){
+        const ss=usage>0?Math.round(Math.max(0,usage-imp)/usage*100):100;
+        pt.innerText=`${ss}% self-sufficient · cost ~${(imp*RATE).toFixed(2)} XCG`;
+        pv.classList.remove("hidden");
+    } else if(pv){pv.classList.add("hidden");}
+}
+function setDailyImport(){
+    const el=document.getElementById("dailyImportInput"),v=parseFloat(el.value);
+    if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
+    actualDailyImportKwh=Math.round(v*10)/10;el.value="";saveState();updateDailyImport();update();
+}
+function clearDailyImport(){actualDailyImportKwh=null;saveState();updateDailyImport();update();}
+function updateDailyImport(){
+    const info=document.getElementById("dailyImportInfo");
+    if(actualDailyImportKwh!==null){
+        info.innerText=`✓ Actual: ${actualDailyImportKwh} kWh (estimated was ${dailyImportKwh.toFixed(1)} kWh)`;
+    } else {
+        info.innerText=`Estimated: ${dailyImportKwh.toFixed(1)} kWh`;
+    }
+    updateExportAcOff();
+}
+function setDailyExport(){
+    const el=document.getElementById("dailyExportInput"),v=parseFloat(el.value);
+    if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
+    actualDailyExportKwh=Math.round(v*10)/10;el.value="";saveState();updateDailyExport();update();
+}
+function clearDailyExport(){actualDailyExportKwh=null;saveState();updateDailyExport();update();}
+function updateDailyExport(){
+    const info=document.getElementById("dailyExportInfo");
+    if(actualDailyExportKwh!==null){
+        info.innerText=`✓ Actual: ${actualDailyExportKwh} kWh (estimated was ${dailyExportKwh.toFixed(1)} kWh)`;
+    } else {
+        info.innerText=`Estimated: ${dailyExportKwh.toFixed(1)} kWh`;
+    }
+    updateExportAcOff();
+}
+function updateExportAcOff(){
+    // What you'd export over a FULL day with AC off: full-day solar minus the
+    // non-AC base loads (fridge + other). Uses a full-day solar projection so
+    // the figure is meaningful even early in the morning.
+    const todayStr=new Date().toDateString();
+    const todayBill=findBillForDate(todayStr);
+    const fullDaySol=actualDailySolarKwh!==null?actualDailySolarKwh
+        :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
+        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
+    const expNoAc=Math.max(0,fullDaySol-(FRIDGE_DAILY+OTHER_DAILY));
+    const el=document.getElementById("exportIfAcOff");
+    if(el)el.innerText=`If AC off all day: ~${expNoAc.toFixed(1)} kWh export (full-day est.)`;
+}
+function updateSolarSourceUI(){
+    const src=document.getElementById("solarSource"),info=document.getElementById("solarManualInfo");
+    if(manualSolarW!==null){
+        const m=Math.floor((Date.now()-manualSolarTime)/60000);
+        src.innerText="Manual inverter reading";
+        info.innerHTML=`<span class="text-emerald-400">✓ ${manualSolarW} W</span> (${m<1?"just now":m+" min ago"}) — press Auto to use KNMI.`;
+    } else if(knmiData&&knmiData.radiation!=null&&knmiData.radiation>0){
+        src.innerText=`From radiation (${_wxSrc||'weather'})`;
+        const estimate=Math.round(knmiData.radiation*MAX_SOLAR/1000*0.88);
+        info.innerText=`${_wxSrc||'Weather'} radiation ${knmiData.radiation} W/m² → ~${estimate} W panel output.`;
+    } else {
+        src.innerText="Waiting for radiation data…";
+        info.innerText="No radiation reading yet. Enter your inverter reading above for accurate output.";
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   WEATHER HELPERS
+═══════════════════════════════════════════════════════ */
+function heatIndex(T,rh){
+    if(T<27||rh<40)return T;
+    return Math.round((-8.78469475556+1.61139411*T+2.33854884*rh-0.14611605*T*rh-0.01230809*T*T-0.01642483*rh*rh+0.00221173*T*T*rh+0.00072546*T*rh*rh-0.00000358*T*T*rh*rh)*10)/10;
+}
+const o2i=o=>o===null?"⛅":o<=0?"☀️":o<=2?"🌤️":o<=4?"⛅":o<=6?"🌥️":"☁️";
+const o2l=o=>o===null?"—":o<=0?"CLEAR":o<=2?"MOSTLY CLEAR":o<=4?"PARTLY CLOUDY":o<=6?"MOSTLY CLOUDY":"OVERCAST";
+function wdLabel(d,s){if(s)return s;if(d===null||isNaN(d))return"—";return["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(d/22.5)%16];}
+function toUVI(r){return r===null||r<=0?0:Math.round(r*0.012*10)/10;}
+function uviInfo(u){
+    if(u<=2) return{lbl:"Low",cls:"text-green-400"};
+    if(u<=5) return{lbl:"Moderate",cls:"text-yellow-400"};
+    if(u<=7) return{lbl:"High",cls:"text-orange-400"};
+    if(u<=10)return{lbl:"Very High",cls:"text-red-400"};
+    return       {lbl:"Extreme",cls:"text-purple-400"};
+}
+function buildRain(intensity){
+    const w=document.getElementById("rainWrap");w.innerHTML="";
+    const n=Math.min(20,Math.ceil(intensity*45));
+    for(let i=0;i<n;i++){const d=document.createElement("div");d.className="rdrop";const h=8+Math.random()*16;d.style.cssText=`height:${h}px;left:${(Math.random()*94).toFixed(1)}%;top:${(Math.random()*20).toFixed(1)}px;animation-delay:${(Math.random()*0.9).toFixed(2)}s;animation-duration:${(0.45+Math.random()*0.55).toFixed(2)}s;opacity:${(0.4+Math.random()*0.5).toFixed(2)}`;w.appendChild(d);}
+}
+
+/* ═══════════════════════════════════════════════════════
+   KNMI FETCH + UI
+═══════════════════════════════════════════════════════ */
+let _wxSrc='';
+
+// Prioritize Open-Meteo Curaçao (fast, reliable); fall back to KNMI Bonaire
+let _wxRetryTimer=null,_wxRetries=0;
+async function fetchKnmi(){
+    setKnmiStatus("busy");
+    const omP=fetchOpenMeteo().then(d=>{
+        if(d&&d.temp_c!==null)return{data:d,src:'Open-Meteo',isOM:true};
+        throw new Error('no data');
     });
-  }
-  tickClock();
-  setInterval(tickClock, 1000);
-
-  // ── Countdown ring ───────────────────────────────────────────────────────
-  function updateRing() {
-    if (!running || !nextRefreshAt) {
-      ring.style.strokeDashoffset = RING_CIRC;
-      countdownText.textContent = '—';
-      return;
+    const knmiP=fetchKnmiPage().then(raw=>{
+        const d=knmiToNormalized(parseKnmiBonaire(raw));
+        if(d&&d.temp_c!==null)return{data:d,src:'KNMI Bonaire',isOM:false};
+        throw new Error('no data');
+    });
+    try{
+        const res=await Promise.any([omP,knmiP]);
+        knmiData=res.data; _wxSrc=res.src;
+        applyKnmiUI(res.data,res.src);
+        setKnmiStatus("ok",res.src);
+        saveWeatherCache(res.data,res.src);
+        _wxRetries=0;
+        if(_wxRetryTimer){clearTimeout(_wxRetryTimer);_wxRetryTimer=null;}
+    }catch(e){
+        setKnmiFailStatus();
+        // Cold-start / flaky-network guard: a single failed attempt used to
+        // leave the app empty until the 5-min interval. Retry quickly with
+        // backoff (~1.5s,2.7s,4.9s,8.7s,15s) so data loads without the user
+        // having to close and reopen the app.
+        if(_wxRetries<5){
+            const delay=Math.min(15000,1500*Math.pow(1.8,_wxRetries));
+            _wxRetries++;
+            if(_wxRetryTimer)clearTimeout(_wxRetryTimer);
+            _wxRetryTimer=setTimeout(fetchKnmi,delay);
+        }
     }
-    const remaining = Math.max(0, nextRefreshAt - Date.now());
-    const fraction  = remaining / (intervalSec * 1000);
-    ring.style.strokeDashoffset = RING_CIRC * (1 - fraction);
-    countdownText.textContent   = Math.ceil(remaining / 1000) + 's';
-  }
-
-  // ── Refresh ──────────────────────────────────────────────────────────────
-  // BUG FIX: Don't mutate the src URL — just reassign the original src.
-  // URL mutation via searchParams drops hash fragments (breaking Ventusky URLs).
-  function refreshFrame(cfg) {
-    const iframe = document.getElementById(cfg.frameId);
-    const card   = document.getElementById(cfg.cardId);
-    if (!iframe || !card) return;
-
-    card.classList.add('loading');
-    // Re-assign the known-good original src; browser treats it as a reload.
-    iframe.src = cfg.src;
-  }
-
-  function markLoaded(cfg) {
-    const card = document.getElementById(cfg.cardId);
-    const ts   = document.getElementById(cfg.tsId);
-    if (card) card.classList.remove('loading');
-    if (ts) {
-      const t = new Date().toLocaleTimeString('en-US', { hour12: false });
-      ts.textContent = t;
-      ts.classList.add('fresh');
-      setTimeout(() => ts.classList.remove('fresh'), 4000);
+}
+// User-initiated fetch (app open / foreground / interval): fresh retry budget.
+function kickWeather(){
+    _wxRetries=0;
+    if(_wxRetryTimer){clearTimeout(_wxRetryTimer);_wxRetryTimer=null;}
+    fetchKnmi();
+}
+function setKnmiStatus(s,src){
+    document.getElementById("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block "+(s==="ok"?"knmi-ok":s==="busy"?"knmi-busy pulse-dot":"knmi-err");
+    document.getElementById("knmiTxt").innerText=s==="ok"?(src||'Weather')+' LIVE':s==="busy"?"Weather…":"No data";
+}
+// Fetch failed: if real (cached) data is still on screen, say so instead of a
+// contradictory "No data". Only show the red error when there's truly nothing.
+function setKnmiFailStatus(){
+    if(knmiData&&_wxCacheTs){
+        const age=Math.round((Date.now()-_wxCacheTs)/60000);
+        document.getElementById("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block knmi-busy";
+        document.getElementById("knmiTxt").innerText="cached"+(age>0?' '+age+'m':'');
+    } else {
+        setKnmiStatus("err");
     }
-  }
-
-  function refreshAll() {
-    FRAMES.forEach(cfg => refreshFrame(cfg));
-  }
-
-  // ── Auto-refresh ─────────────────────────────────────────────────────────
-  function startAuto() {
-    intervalSec = Math.max(10, Number(intervalInput.value) || 300);
-    if (autoTimer)  clearInterval(autoTimer);
-    if (countTimer) clearInterval(countTimer);
-
-    refreshAll(); // immediate refresh on start
-    nextRefreshAt = Date.now() + intervalSec * 1000;
-
-    autoTimer = setInterval(() => {
-      refreshAll();
-      nextRefreshAt = Date.now() + intervalSec * 1000;
-    }, intervalSec * 1000);
-
-    countTimer = setInterval(updateRing, 500);
-
-    running = true;
-    toggleBtn.textContent = '■ STOP';
-    toggleBtn.classList.add('active');
-    countdownWrap.classList.remove('stopped');
-    updateRing();
-  }
-
-  function stopAuto() {
-    if (autoTimer)  { clearInterval(autoTimer);  autoTimer = null; }
-    if (countTimer) { clearInterval(countTimer); countTimer = null; }
-    running = false;
-    nextRefreshAt = null;
-    toggleBtn.textContent = '▶ START';
-    toggleBtn.classList.remove('active');
-    countdownWrap.classList.add('stopped');
-    updateRing();
-  }
-
-  // ── Lock ─────────────────────────────────────────────────────────────────
-  function toggleLock() {
-    locked = !locked;
-    grid.classList.toggle('locked', locked);
-    lockBtn.textContent  = locked ? '🔒 LOCKED' : '🔓 LOCK';
-    lockBtn.classList.toggle('locked', locked);
-    lockBtn.title = locked
-      ? 'Iframes locked — click to allow scroll/zoom'
-      : 'Lock iframes (prevent scroll/zoom)';
-  }
-
-  lockBtn.addEventListener('click', toggleLock);
-
-  // ── Events ───────────────────────────────────────────────────────────────
-  toggleBtn.addEventListener('click', () => running ? stopAuto() : startAuto());
-
-  nowBtn.addEventListener('click', () => {
-    refreshAll();
-    if (running) {
-      // Reset the countdown after a manual refresh
-      clearInterval(autoTimer);
-      nextRefreshAt = Date.now() + intervalSec * 1000;
-      autoTimer = setInterval(() => {
-        refreshAll();
-        nextRefreshAt = Date.now() + intervalSec * 1000;
-      }, intervalSec * 1000);
+}
+let _prevPressure=null;
+function applyKnmiUI(d,src){
+    const feels=(d.temp_c!==null&&d.rh!==null)?heatIndex(d.temp_c,d.rh):(d.temp_c||31);
+    document.getElementById("wxFeels").innerText=(feels!==null?feels.toFixed(0):"—")+"°";
+    document.getElementById("wxAir").innerText=d.temp_c!==null?d.temp_c.toFixed(1):"—";
+    document.getElementById("wxDew").innerText=d.dew_c!==null?d.dew_c.toFixed(1):"—";
+    document.getElementById("wxRh").innerText=d.rh!==null?d.rh.toFixed(0):"—";
+    document.getElementById("wxCloud").innerText=d.cloud_octa!==null?d.cloud_octa:"—";
+    document.getElementById("wxCondition").innerText=o2l(d.cloud_octa);
+    document.getElementById("wxIcon").innerText=o2i(d.cloud_octa);
+    document.getElementById("outdoor").innerText=feels!==null?feels.toFixed(1)+"°C":"—°C";
+    if(d.slp!==null){
+        const trend=_prevPressure!==null?(d.slp>_prevPressure+0.3?'↑':d.slp<_prevPressure-0.3?'↓':'→'):'';
+        document.getElementById("wxPressure").innerText=d.slp.toFixed(0)+" hPa";
+        document.getElementById("wxPressureTrend").innerText=trend;
+        document.getElementById("wxPressureHint").innerText=trend==='↑'?'rising':trend==='↓'?'falling':'stable';
+        _prevPressure=d.slp;
     }
-  });
+    if(d.time)document.getElementById("wxObsTime").innerText="Obs: "+d.time;
+    document.getElementById("wxWindKt").innerText=d.wind_kt!==null?d.wind_kt+" kt":"— kt";
+    document.getElementById("wxWindDir").innerText=wdLabel(d.wind_dir,d.wind_sector);
+    document.getElementById("wxGustKt").innerText=d.gust_kt!==null?"gust "+d.gust_kt+" kt":"gust — kt";
+    if(d.wind_dir!==null&&!isNaN(d.wind_dir))
+        document.getElementById("compassGroup").style.transform=`rotate(${d.wind_dir+180}deg)`;
+    const pr=d.precip_10m;
+    if(pr!==null){
+        document.getElementById("wxPrecip").innerText=pr.toFixed(1)+" mm";
+        document.getElementById("wxRainStatus").innerText=pr<=0?"Dry":pr<0.5?"Light rain":pr<2?"Moderate":"Heavy rain";
+        document.getElementById("wxPrecipPeriod").innerText=src&&src.includes('Open-Meteo')?'per hr':'per 10 min';
+        buildRain(pr);
+    } else {
+        document.getElementById("wxPrecip").innerText="—";
+        document.getElementById("wxRainStatus").innerText="—";
+        buildRain(0);
+    }
+    const uvi=toUVI(d.radiation),ui=uviInfo(uvi);
+    if(d.radiation!==null){
+        document.getElementById("wxUvNum").innerText=uvi.toFixed(1);
+        document.getElementById("wxUvNum").className="text-3xl font-bold tabular-nums "+ui.cls;
+        document.getElementById("wxUvLabel").innerText=ui.lbl;
+        document.getElementById("wxUvLabel").className="text-[11px] font-semibold "+ui.cls;
+        document.getElementById("uvCursor").style.left=`calc(${Math.min(100,uvi/13*100).toFixed(1)}% - 6px)`;
+        document.getElementById("wxRadiation").innerText=Math.round(d.radiation)+" W/m²";
+    } else {
+        document.getElementById("wxUvNum").innerText="—";
+        document.getElementById("wxUvNum").className="text-3xl font-bold text-green-400 tabular-nums";
+        document.getElementById("wxUvLabel").innerText="—";
+        document.getElementById("wxRadiation").innerText="— W/m²";
+    }
+}
 
-  // BUG FIX: Only fire keyboard shortcut when not focused on an input
-  document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    if (e.key === 'r' || e.key === 'R') { nowBtn.click(); }
-    if (e.key === ' ') { e.preventDefault(); toggleBtn.click(); }
-    if (e.key === 'l' || e.key === 'L') { toggleLock(); }
-  });
+/* ═══════════════════════════════════════════════════════
+   SOLAR GAUGE + HISTORY
+═══════════════════════════════════════════════════════ */
+let histBars=[];
+function buildHistBars(){
+    const c=document.getElementById("solarHistBars");c.innerHTML="";histBars=[];
+    for(let i=0;i<20;i++){const b=document.createElement("div");b.className="hist-bar";b.style.height="2px";c.appendChild(b);histBars.push(b);}
+}
+function updateSolarGauge(sol){
+    const pct=Math.min(100,Math.round(sol/MAX_SOLAR*100));
+    document.getElementById("solarArc").style.strokeDashoffset=201*(1-pct/100);
+    document.getElementById("solarArc").style.stroke=pct>70?"#34d399":pct>40?"#22d3ee":"#60a5fa";
+    document.getElementById("solarPctLabel").innerText=pct+"%";
+    solarHistory.push(sol);solarHistory.shift();
+    const mx=Math.max(...solarHistory,1);
+    histBars.forEach((b,i)=>{const h=Math.max(2,solarHistory[i]/mx*100);b.style.height=h+"%";b.style.background=`rgba(52,211,153,${(0.2+solarHistory[i]/mx*0.65).toFixed(2)})`;});
+}
 
-  // BUG FIX: Load events on the iframes — fires reliably for loaded state
-  FRAMES.forEach(cfg => {
-    const iframe = document.getElementById(cfg.frameId);
-    if (!iframe) return;
-    iframe.addEventListener('load', () => markLoaded(cfg));
-  });
+/* ═══════════════════════════════════════════════════════
+   POWER FLOW
+═══════════════════════════════════════════════════════ */
+function updateFlowCard(sol,house,net){
+    document.getElementById("flowSolarW").innerText=sol+" W";
+    document.getElementById("flowHouseW").innerText=house+" W";
+    const exp=net>=0;
+    document.getElementById("flowGridW").innerText=(exp?"+":"")+net+" W";
+    document.getElementById("flowGridLbl").innerText=exp?"EXPORT":"IMPORT";
+    document.getElementById("flowGridLbl").className="text-[10px] mt-0.5 "+(exp?"text-emerald-400/60":"text-red-400/60");
+    document.getElementById("flowGridW").className="text-base font-bold tabular-nums "+(exp?"text-emerald-400":"text-red-400");
+    const gn=document.getElementById("flowGridNode");
+    gn.className="flow-node "+(exp?"flow-node-grid":"flow-node-grid importing");
+    ["gd1","gd2","gd3"].forEach(id=>{
+        const el=document.getElementById(id);
+        el.className="fdot "+(exp?"bg-emerald-400":"bg-red-400 rev");
+    });
+    // Self-sufficiency: share of current house load met by solar right now
+    const ss=house>0?Math.min(100,Math.round(sol/house*100)):0;
+    document.getElementById("selfSuff").innerText=ss+"% SOLAR-POWERED";
+    document.getElementById("selfSuff").className=ss>=100?"text-emerald-400":ss>=50?"text-emerald-400/70":"text-yellow-400/70";
+}
 
-})();
+/* ═══════════════════════════════════════════════════════
+   STATS TABS + RENDER
+═══════════════════════════════════════════════════════ */
+function setStatsTab(tab){
+    currentStatsTab=tab;
+    ['day','week','month'].forEach(t=>{
+        document.getElementById("stats"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("hidden",t!==tab);
+        const btn=document.getElementById("tab"+t.charAt(0).toUpperCase()+t.slice(1));
+        btn.classList.toggle("stats-tab-active",t===tab);
+        btn.classList.toggle("text-white/50",t!==tab);
+    });
+    if(tab==='week')renderChart7();
+    if(tab==='month')renderChart30();
+}
+
+function renderStatsToday(){
+    // saveStats() upserts TODAY's row into statsData every 10s, so the last
+    // element is usually today itself — look yesterday up by date instead.
+    const yd=new Date(); yd.setDate(yd.getDate()-1);
+    const todayStr=new Date().toDateString();
+    const yest=statsData.find(d=>d.date===yd.toDateString())
+        ||[...statsData].reverse().find(d=>d.date!==todayStr)||null;
+
+    // Check if there's a bill covering today for calibration
+    const todayBill=findBillForDate(todayStr);
+
+    // Solar: prefer manual entry, then bill-calibrated average, then live
+    const solDisplay=actualDailySolarKwh!==null?actualDailySolarKwh
+        :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg:dailySolarKwh);
+    // Import: prefer manual entry, then live
+    const impDisplay=actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh;
+    // Usage: prefer manual entry, then bill-calibrated average, then live
+    const totDisplay=actualDailyUsageKwh!==null?actualDailyUsageKwh
+        :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg:(dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY));
+    const expDisplay=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,solDisplay-totDisplay+impDisplay);
+    const cost=+(impDisplay*RATE-expDisplay*EXPORT_RATE);
+    document.getElementById("stTodaySolar").innerText=solDisplay.toFixed(1)+" kWh"+(actualDailySolarKwh!==null?' ✓':'')+(todayBill&&todayBill.dailySolarAvg!=null&&actualDailySolarKwh==null?' ✓':'');
+    document.getElementById("stTodayCost").innerText=cost.toFixed(2)+" XCG";
+    document.getElementById("stTodayExport").innerText=expDisplay.toFixed(1)+" kWh"+(actualDailyExportKwh!==null?' ✓':'');
+    document.getElementById("stTodayImport").innerText=impDisplay.toFixed(1)+" kWh"+(actualDailyImportKwh!==null?' ✓':'');
+    document.getElementById("stTodayAc").innerText=dailyAcKwh.toFixed(1)+" kWh";
+    document.getElementById("stTodayFridge").innerText=FRIDGE_DAILY.toFixed(1)+" kWh";
+    document.getElementById("stTodayOther").innerText=OTHER_DAILY.toFixed(1)+" kWh";
+    const selfSuf=totDisplay>0?Math.round(Math.max(0,totDisplay-impDisplay)/totDisplay*100):100;
+    const ssEl=document.getElementById("stTodaySelfSuf");
+    if(ssEl)ssEl.innerText=selfSuf+"% self-sufficient";
+    if(yest){
+        const dSol=solDisplay-yest.solar_kwh;
+        document.getElementById("stTodaySolarVsYest").innerHTML=(dSol>=0?'<span class="text-emerald-400">↑ +':'<span class="text-red-400">↓ ')+Math.abs(dSol).toFixed(1)+" kWh</span> vs yesterday";
+        const dCost=cost-yest.cost_xcg;
+        document.getElementById("stTodayCostVsYest").innerHTML=(dCost<=0?'<span class="text-emerald-400">↓ -':'<span class="text-red-400">↑ +')+Math.abs(dCost).toFixed(2)+" XCG</span> vs yesterday";
+    }
+    // Projected full day — uses AC profile daily estimate for usage, KNMI solar for full-day PV
+    // Prefer bill-calibrated values if available
+    const projSol=actualDailySolarKwh!==null?actualDailySolarKwh
+        :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
+        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
+    const projUsage=actualDailyUsageKwh!==null?actualDailyUsageKwh
+        :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg
+        :((acMode?AC_PROFILES[setpoint].dailyKwh:0.2)+FRIDGE_DAILY+OTHER_DAILY));
+    const projImp=actualDailyImportKwh!==null?actualDailyImportKwh:Math.max(0,projUsage-projSol);
+    const projExp=Math.max(0,projSol-projUsage);
+    const projCostVal=projImp*RATE-projExp*EXPORT_RATE;
+    const projSS=projUsage>0?Math.min(100,Math.round((projUsage-projImp)/projUsage*100)):100;
+    document.getElementById("projSolar").innerText=projSol.toFixed(1)+" kWh";
+    document.getElementById("projUsage").innerText=projUsage.toFixed(1)+" kWh";
+    document.getElementById("projImport").innerText=projImp.toFixed(1)+" kWh";
+    document.getElementById("projExport").innerText=projExp.toFixed(1)+" kWh";
+    document.getElementById("projCost").innerText=projCostVal.toFixed(2);
+    document.getElementById("projSelfSuf").innerText=projSS+"%";
+    document.getElementById("projAcTag").innerText=acMode?"AC ON "+setpoint+"°C":"AC OFF";
+}
+
+const CHART_SCALE_KWH=10; // fixed y-axis ceiling so daily bars are comparable
+const kwhH=v=>Math.max(2,Math.min(100,(v||0)/CHART_SCALE_KWH*100));
+function renderChart7(){
+    const days=statsData.slice(-7);
+    const total7sol=days.reduce((a,d)=>a+d.solar_kwh,0);
+    const total7cost=days.reduce((a,d)=>a+d.cost_xcg,0);
+    const total7use=days.reduce((a,d)=>a+(d.total_kwh||0),0);
+    document.getElementById("st7Solar").innerText=total7sol.toFixed(1)+" kWh";
+    document.getElementById("st7Cost").innerText=total7cost.toFixed(2)+" XCG";
+    document.getElementById("st7Avg").innerText=(total7sol/days.length).toFixed(1)+" kWh";
+    const c=document.getElementById("chart7Bars");c.innerHTML="";
+    days.forEach(d=>{
+        const isToday=d.date===new Date().toDateString();
+        const col=document.createElement("div");
+        col.className="chart-col";
+        const sh=kwhH(d.solar_kwh);
+        const ih=kwhH(d.import_kwh);
+        const uh=kwhH(d.total_kwh);
+        const dayLabel=new Date(d.date).toLocaleDateString('en-US',{weekday:'short'});
+        col.innerHTML=`<div class="chart-bars h-full items-end">
+            <div class="cbar" style="height:${sh}%;background:${isToday?'#34d399':'rgba(52,211,153,0.55)'}" title="Solar ${d.solar_kwh.toFixed(1)} kWh"></div>
+            <div class="cbar" style="height:${uh}%;background:${isToday?'#fb923c':'rgba(251,146,60,0.5)'}" title="Usage ${(d.total_kwh||0).toFixed(1)} kWh"></div>
+            <div class="cbar" style="height:${ih}%;background:${isToday?'#f87171':'rgba(248,113,113,0.5)'}" title="Import ${(d.import_kwh||0).toFixed(1)} kWh"></div>
+        </div>
+        <div class="chart-lbl ${isToday?'today':''}">${dayLabel}</div>`;
+        c.appendChild(col);
+    });
+}
+
+function renderChart30(){
+    const days=statsData.slice(-30);
+    const total=days.reduce((a,d)=>({sol:a.sol+d.solar_kwh,cost:a.cost+d.cost_xcg}),{sol:0,cost:0});
+    document.getElementById("st30Solar").innerText=total.sol.toFixed(0)+" kWh";
+    document.getElementById("st30Cost").innerText=total.cost.toFixed(1)+" XCG";
+    const best=days.reduce((a,d)=>d.solar_kwh>a.solar_kwh?d:a,days[0]);
+    const worst=days.reduce((a,d)=>d.solar_kwh<a.solar_kwh?d:a,days[0]);
+    document.getElementById("st30Best").innerText=best?best.solar_kwh.toFixed(1)+" kWh":"—";
+    document.getElementById("st30Worst").innerText=worst?worst.solar_kwh.toFixed(1)+" kWh":"—";
+    const c=document.getElementById("chart30Bars");c.innerHTML="";
+    days.forEach(d=>{
+        const isToday=d.date===new Date().toDateString();
+        const sh=kwhH(d.solar_kwh);
+        const uh=kwhH(d.total_kwh);
+        const ih=kwhH(d.import_kwh);
+        const col=document.createElement("div");col.className="chart-col";
+        col.innerHTML=`<div class="chart-bars h-full items-end">
+            <div class="cbar" style="height:${sh}%;background:${isToday?'#34d399':'rgba(52,211,153,0.45)'}"></div>
+            <div class="cbar" style="height:${uh}%;background:${isToday?'#fb923c':'rgba(251,146,60,0.4)'}"></div>
+            <div class="cbar" style="height:${ih}%;background:${isToday?'#f87171':'rgba(248,113,113,0.4)'}"></div>
+        </div>`;
+        c.appendChild(col);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOADS
+═══════════════════════════════════════════════════════ */
+function outdoorFeelsLike(){
+    if(knmiData&&knmiData.temp_c!==null&&knmiData.rh!==null)return heatIndex(knmiData.temp_c,knmiData.rh);
+    return 31.5+Math.sin(Date.now()/1800000)*3.2;
+}
+function solar(){
+    if(manualSolarW!==null)return manualSolarW;
+    // Drive solar PV from measured radiation (W/m²) → panel watts
+    if(knmiData&&knmiData.radiation!=null&&knmiData.radiation>0){
+        return Math.round(knmiData.radiation*MAX_SOLAR/1000*0.88);
+    }
+    // No radiation data yet (or night / zero) → no output
+    return 0;
+}
+function acPower(ind,out){
+    if(!acMode)return 8;
+    const p=AC_PROFILES[setpoint];
+    const f=MAX_AC/AC_REF_PEAK; // scale thermal response & floor to the unit's size
+    let l=p.base+(out-ind)*68*f+(ind-setpoint)*45*f;
+    if(Math.abs(out-setpoint)<1.5&&Math.abs(ind-setpoint)<0.4)l=p.base*0.6;
+    return Math.min(MAX_AC,Math.max(220*f,Math.floor(l)));
+}
+function fridgePower(){
+    // Cycle every ~4 hours (240 minutes); compressor on for first FRIDGE_DUTY of that period
+    const now=Date.now();
+    const mins=Math.floor(now/60000);  // convert to minutes, stable across multiple calls
+    const cycle=(mins%240)/240;        // 0 to 1 over 4-hour window
+    const running=cycle<FRIDGE_DUTY;
+    return{w:running?FRIDGE_RUN_W+Math.floor(Math.random()*8):FRIDGE_IDLE_W+Math.floor(Math.random()*3),running};
+}
+function updateIndoor(out,ac){
+    if(acMode){
+        // Thermostat behaviour: the room converges toward the setpoint, sitting
+        // a touch above it when it's hotter outside (the AC can't pull it all
+        // the way down). This keeps the indoor reading at the AC's set temp
+        // instead of drifting to the clamp.
+        const target=setpoint+Math.max(0,out-setpoint)*0.04;
+        indoor+=(target-indoor)*0.12;
+    } else {
+        // AC off: room slowly drifts toward the outdoor feels-like temperature.
+        indoor+=(out-indoor)*0.05;
+    }
+    indoor=Math.max(18,Math.min(42,indoor));
+}
+
+/* ═══════════════════════════════════════════════════════
+   MAIN UPDATE TICK
+═══════════════════════════════════════════════════════ */
+function update(){
+    checkDayRollover(); // reset daily counters when the clock passes midnight
+    const out=outdoorFeelsLike(),sol=solar(),ac=acPower(indoor,out);
+    const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
+    updateIndoor(out,ac);
+    const house=ac+fridge.w+other,net=sol-house;
+    const impW=Math.max(0,-net),expW=Math.max(0,net);
+    const tick=1.2/3600;
+    dailySolarKwh+=sol/1000*tick; dailyAcKwh+=ac/1000*tick;
+    dailyImportKwh+=impW/1000*tick; dailyExportKwh+=expW/1000*tick;
+
+    // Cost projections (for monthly estimate) + running actual cost
+    const acDayEst=acMode?AC_PROFILES[setpoint].dailyKwh:0.2;
+    const solEst=Math.max(dailySolarKwh,3.5);
+    const netDay=acDayEst+FRIDGE_DAILY+OTHER_DAILY-solEst;
+    const dailyCost=netDay*RATE; // projection only (used for 30-day estimate)
+    const worstDay=(AC_PROFILES[26].dailyKwh+FRIDGE_DAILY+OTHER_DAILY-solEst)*RATE;
+    const runningCost=dailyImportKwh*RATE-dailyExportKwh*EXPORT_RATE; // actual running cost
+
+    // Solar
+    document.getElementById("solar").innerText=sol+" W";
+    document.getElementById("dailySolar").innerText=dailySolarKwh.toFixed(1)+" kWh";
+    document.getElementById("headerSolarKwh").innerText="SOLAR "+dailySolarKwh.toFixed(1)+" kWh";
+    updateSolarGauge(sol); updateSolarSourceUI(); updateSolarDaily(); updateDailyUsage(); updateDailyImport();
+
+    // AC
+    const acPct=Math.min(100,Math.round(ac/MAX_AC*100));
+    document.getElementById("ac").innerText=ac+" W";
+    document.getElementById("acDaily").innerText=dailyAcKwh.toFixed(1)+" kWh";
+    document.getElementById("acBar").style.width=acPct+"%";
+    document.getElementById("acBar").style.background=acPct>75?"linear-gradient(to right,#f97316,#ef4444)":acPct>45?"linear-gradient(to right,#22d3ee,#3b82f6)":"linear-gradient(to right,#22d3ee,#06b6d4)";
+    document.getElementById("acPct").innerText=acPct+"%";
+    document.getElementById("acEffLabel").innerText=!acMode?"Standby":acPct<30?"Low load":acPct<60?"Normal":acPct<80?"High load":"Peak load";
+
+    // Indoor
+    document.getElementById("indoor").innerText=indoor.toFixed(1)+"°C";
+    const delta=indoor-setpoint;
+    document.getElementById("indoorDelta").innerText=(delta>=0?"+":"")+delta.toFixed(1)+"°C";
+    document.getElementById("indoorDelta").className="font-semibold tabular-nums "+(Math.abs(delta)<0.5?"text-emerald-400":Math.abs(delta)<1.5?"text-yellow-400":"text-red-400");
+
+    // Fridge
+    document.getElementById("fridge").innerText=fridge.w+" W";
+    document.getElementById("fridgeState").innerText=fridge.running?"Compressor running":"Idle (cycling)";
+    document.getElementById("fridgeDaily").innerText=FRIDGE_DAILY.toFixed(1)+" kWh";
+
+    // Other
+    document.getElementById("other").innerText=other+" W";
+    document.getElementById("otherDaily").innerText=OTHER_DAILY.toFixed(1)+" kWh";
+
+    // House
+    document.getElementById("houseTotal").innerText=house+" W";
+    document.getElementById("bdAc").innerText=ac+" W";
+    document.getElementById("bdFridge").innerText=fridge.w+" W";
+    document.getElementById("bdOther").innerText=other+" W";
+    document.getElementById("bdAcBar").style.width=Math.round(ac/house*100)+"%";
+    document.getElementById("bdFridgeBar").style.width=Math.round(fridge.w/house*100)+"%";
+    document.getElementById("bdOtherBar").style.width=Math.round(other/house*100)+"%";
+
+    // Grid
+    const gEl=document.getElementById("grid");
+    gEl.innerText=(net>=0?"+":"")+net+" W";
+    gEl.className="text-4xl font-bold tabular-nums "+(net>=0?"text-emerald-400":"text-red-400");
+    document.getElementById("status").innerHTML=net>0
+        ?`<span class="text-emerald-400">↑ EXPORTING</span> <span class="font-mono text-white/50">+${expW} W</span>`
+        :`<span class="text-red-400">↓ IMPORTING</span> <span class="font-mono text-white/50">${impW} W</span>`;
+    document.getElementById("export").innerText=expW+" W";
+    document.getElementById("import").innerText=impW+" W";
+    const gc=document.getElementById("gridCard");
+    gc.className=gc.className.replace(/card-glow-\w+/g,"").trim();
+    gc.classList.add(net>=0?"card-glow-green":"card-glow-red");
+    if(net>=0)gc.classList.add("card-accent-green"); else gc.classList.remove("card-accent-green");
+
+    // Solar card glow
+    const sc=document.getElementById("solarCard");
+    sc.className=sc.className.replace(/card-glow-\w+/g,"").trim();
+    if(sol>80)sc.classList.add("card-glow-green");
+
+    // Power flow
+    updateFlowCard(sol,house,net);
+
+    // Cost
+    document.getElementById("daily").innerText=runningCost.toFixed(2)+" XCG";
+    document.getElementById("monthly").innerText=(dailyCost*30).toFixed(1)+" XCG";
+    document.getElementById("savings").innerText=Math.max(0,(worstDay-dailyCost)*30).toFixed(0)+" XCG saved";
+    document.getElementById("dailyTrend").innerHTML=runningCost<=0
+        ?`<i class="fas fa-arrow-down mr-1"></i>EARNING FROM SOLAR`
+        :`<i class="fas fa-bolt mr-1"></i>${acMode?"AC AT "+setpoint+"°C":"AC OFF — LOWEST COST"}`;
+
+    // Stats today tab
+    if(currentStatsTab==='day') renderStatsToday();
+}
+
+/* ═══════════════════════════════════════════════════════
+   AQUALECTRA BILLS — upload photo, on-device OCR, organize
+═══════════════════════════════════════════════════════ */
+let billsData=[];
+const BILL_MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function loadBills(){
+    try{
+        const b=JSON.parse(localStorage.getItem('powerBills'));
+        if(Array.isArray(b)){
+            billsData=b;
+            // Backfill calibrated averages for any bills missing them
+            billsData.forEach(bill=>{
+                if(!bill.dailySolarAvg && !bill.dailyUsageAvg)calculateBillAverages(bill);
+            });
+        }
+    }catch(e){}
+}
+function saveBills(){try{localStorage.setItem('powerBills',JSON.stringify(billsData));}catch(e){}}
+function parseBillDate(s){
+    const m=String(s||'').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if(!m)return null;
+    const d=new Date(+m[3],+m[2]-1,+m[1]);
+    return isNaN(d)?null:d;
+}
+function billPeriodKey(b){ // billing month = month of the period end date
+    const d=parseBillDate(b.dateEnd)||parseBillDate(b.dateStart);
+    return d?d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'):'unknown';
+}
+function billLabel(b){
+    const d=parseBillDate(b.dateEnd)||parseBillDate(b.dateStart);
+    return d?BILL_MONTHS[d.getMonth()]+' '+d.getFullYear():'Unknown period';
+}
+function billDays(b){
+    const a=parseBillDate(b.dateStart),z=parseBillDate(b.dateEnd);
+    return a&&z?Math.max(1,Math.round((z-a)/86400000)):30;
+}
+function calculateBillAverages(b){
+    const days=billDays(b);
+    if(!days||days<1)return;
+    // Daily export average = solar production (what was exported)
+    if(b.expKwh!=null)b.dailySolarAvg=+(b.expKwh/days).toFixed(1);
+    // Daily usage average = import minus export (net consumed from grid)
+    // Import is what came from grid; export is what went back; so usage = import - export
+    if(b.impKwh!=null&&b.expKwh!=null)b.dailyUsageAvg=+((b.impKwh-b.expKwh)/days).toFixed(1);
+}
+function findBillForDate(dateStr){
+    // Check which bill period (if any) covers the given date
+    for(const b of billsData){
+        const a=parseBillDate(b.dateStart),z=parseBillDate(b.dateEnd);
+        if(!a||!z)continue;
+        const d=new Date(dateStr);
+        if(d>=a&&d<=z)return b;
+    }
+    return null;
+}
+
+// ── Upload → OCR (runs entirely on the phone; the photo is never uploaded) ──
+function setBillStatus(html){
+    const el=document.getElementById('billOcrStatus');
+    if(html===null){el.classList.add('hidden');return;}
+    el.classList.remove('hidden'); el.innerHTML=html;
+}
+async function handleBillFile(file){
+    if(!file)return;
+    try{
+        setBillStatus('<i class="fas fa-circle-notch fa-spin mr-2"></i>Loading text recognition (first time only)…');
+        if(!window.Tesseract){
+            await new Promise((res,rej)=>{
+                const s=document.createElement('script');
+                s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+                s.onload=res; s.onerror=()=>rej(new Error('could not load the OCR library'));
+                document.head.appendChild(s);
+            });
+        }
+        const worker=await Tesseract.createWorker('eng',1,{logger:m=>{
+            if(m.status==='recognizing text')setBillStatus('<i class="fas fa-circle-notch fa-spin mr-2"></i>Reading receipt… '+Math.round(m.progress*100)+'%');
+        }});
+        const {data}=await worker.recognize(file);
+        await worker.terminate();
+        setBillStatus(null);
+        const parsed=parseAqualectra(data&&data.text||'');
+        openBillReview(parsed,parsed._found>=3?null:'Some fields could not be read from the photo — check and fill in what is missing.');
+    }catch(e){
+        setBillStatus(null);
+        openBillReview({},'Could not read the photo ('+(e&&e.message||'error')+'). Enter the values from the receipt manually.');
+    }
+}
+
+// Extract the Aqualectra fields from OCR text. Meter rows look like:
+//   Koriente J8D010734870 05.05.2026 5,579.00 03.06.2026 5,844.00 1.00 265.00 KWH 30 SU 01
+// Cost lines look like:  Konsumo Normal di Koriente kWh-L   XCG 157.49
+function parseAqualectra(text){
+    const lines=String(text).split('\n').map(l=>l.trim()).filter(Boolean);
+    const decs=s=>(s.match(/\d[\d,]*\.\d{2}/g)||[]).map(x=>parseFloat(x.replace(/,/g,'')));
+    const dates=s=>s.match(/\d{2}\.\d{2}\.\d{4}/g)||[];
+    const out={_found:0};
+    const grabRow=(re,keyKwh)=>{
+        for(const L of lines){
+            if(!re.test(L))continue;
+            const ds=dates(L),ns=decs(L.replace(/\d{2}\.\d{2}\.\d{4}/g,' '));
+            if(ds.length>=2&&ns.length>=2){
+                if(!out.dateStart){out.dateStart=ds[0];out.dateEnd=ds[1];}
+                const posI=ns[0],posF=ns[1];
+                let k=ns.length>=4?ns[3]:ns[ns.length-1];
+                // The meter positions are the ground truth; if the parsed
+                // consumption disagrees with end-start, trust the positions.
+                if(Math.abs((posF-posI)-k)>1.5)k=+(posF-posI).toFixed(2);
+                out[keyKwh]=k;out._found++;
+                return;
+            }
+        }
+    };
+    grabRow(/koriente/i,'impKwh');
+    grabRow(/zonnepanel/i,'expKwh');
+    grabRow(/\bawa\b/i,'waterM3');
+    const grabCost=(re,key)=>{
+        for(const L of lines){
+            if(!re.test(L))continue;
+            // Strip dd.mm.yyyy dates first ("Paga Prome Ku: 23.06.2026" sits on
+            // the Saldo Final line) so "23.06" is never mistaken for an amount.
+            const ns=decs(L.replace(/\d{2}\.\d{2}\.\d{4}/g,' '));
+            if(ns.length){out[key]=ns[ns.length-1];out._found++;return;}
+        }
+    };
+    grabCost(/koriente\s*kwh/i,'costElec');
+    grabCost(/entrega\s*energia/i,'credSolar');
+    grabCost(/kapasidat/i,'costPanel');
+    grabCost(/konsumo\s*normal\s*di\s*awa/i,'costWater');
+    grabCost(/hur\s*di\s*meter/i,'costMeter');
+    grabCost(/saldo\s*final/i,'total'); // first Saldo Final = electricity+water section
+    return out;
+}
+
+// ── Review modal ──
+const BILL_INPUT_IDS={dateStart:'billStart',dateEnd:'billEnd',impKwh:'billImp',expKwh:'billExp',waterM3:'billWater',costElec:'billCostElec',credSolar:'billCredSolar',costPanel:'billCostPanel',costWater:'billCostWater',costMeter:'billCostMeter',total:'billTotal'};
+let _billEditId=null;
+function openBillReview(p,note){
+    _billEditId=p&&p.id||null;
+    for(const f in BILL_INPUT_IDS)document.getElementById(BILL_INPUT_IDS[f]).value=(p&&p[f]!=null)?p[f]:'';
+    const n=document.getElementById('billReviewNote');
+    if(note){n.innerText=note;n.classList.remove('hidden');}else n.classList.add('hidden');
+    document.getElementById('billOverlay').classList.remove('hidden');
+}
+function closeBillReview(){document.getElementById('billOverlay').classList.add('hidden');_billEditId=null;}
+function addBillManually(){openBillReview({},null);}
+function editBill(id){const b=billsData.find(x=>x.id===id);if(b)openBillReview(b,null);}
+function saveBillReview(){
+    const b=(_billEditId?billsData.find(x=>x.id===_billEditId):null)||{};
+    for(const f in BILL_INPUT_IDS){
+        const v=document.getElementById(BILL_INPUT_IDS[f]).value.trim();
+        if(f==='dateStart'||f==='dateEnd')b[f]=v;
+        else{const n=parseFloat(v);b[f]=isFinite(n)?n:null;}
+    }
+    if(b.impKwh==null&&b.total==null){alert('Enter at least the imported kWh or the bill total.');return;}
+    if(!b.id){b.id=Date.now();b.ts=Date.now();}
+    b.period=billPeriodKey(b);
+    // Re-uploading the same month's bill replaces the earlier entry
+    const dup=billsData.findIndex(x=>x.period===b.period&&x.id!==b.id);
+    if(dup>=0)billsData.splice(dup,1);
+    if(!billsData.find(x=>x.id===b.id))billsData.push(b);
+    billsData.sort((a,z)=>a.period<z.period?-1:1);
+    // Calculate and store daily averages from bill data for calibration
+    calculateBillAverages(b);
+    saveBills();renderBills();closeBillReview();
+}
+function deleteBill(id){
+    const b=billsData.find(x=>x.id===id);
+    if(!b)return;
+    if(!confirm('Delete the '+billLabel(b)+' bill?'))return;
+    billsData=billsData.filter(x=>x.id!==id);
+    saveBills();renderBills();
+}
+
+// ── Apply the real rates from the newest bill to the app's cost settings ──
+function applyBillRates(){
+    const b=billsData[billsData.length-1];if(!b)return;
+    const r=b.costElec&&b.impKwh?b.costElec/b.impKwh:null;
+    const er=b.credSolar&&b.expKwh?b.credSolar/b.expKwh:null;
+    if(!r){alert('The latest bill is missing the electricity cost or kWh, so no rate can be calculated.');return;}
+    if(!confirm('Set import rate to '+r.toFixed(3)+' XCG/kWh'+(er?' and solar credit to '+er.toFixed(3)+' XCG/kWh':'')+', taken from your '+billLabel(b)+' bill?'))return;
+    RATE=+r.toFixed(3); if(er)EXPORT_RATE=+er.toFixed(3);
+    try{localStorage.setItem("powerSettings",JSON.stringify({RATE,EXPORT_RATE,MAX_SOLAR,FRIDGE_RUN_W,MAX_AC}));}catch(e){}
+    recomputeDerived();
+    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+    renderBills();update();
+}
+
+function renderBills(){
+    const list=document.getElementById('billsList'),ins=document.getElementById('billInsights');
+    if(!list)return;
+    list.innerHTML='';
+    if(!billsData.length){
+        ins.classList.add('hidden');
+        list.innerHTML='<div class="text-[12px] text-white/35 text-center py-5">No bills saved yet. Tap <b class="text-yellow-300">Upload receipt</b> and photograph your Aqualectra bill.</div>';
+        return;
+    }
+    const latest=billsData[billsData.length-1];
+    const lr=latest.costElec&&latest.impKwh?latest.costElec/latest.impKwh:null;
+    const ler=latest.credSolar&&latest.expKwh?latest.credSolar/latest.expKwh:null;
+    if(lr){
+        ins.classList.remove('hidden');
+        ins.innerHTML='⚡ Your real rate from '+billLabel(latest)+': <b class="text-yellow-300">'+lr.toFixed(3)+' XCG/kWh</b>'
+            +(ler?' · solar credit <b class="text-emerald-300">'+ler.toFixed(3)+'</b>':'')
+            +(Math.abs(lr-RATE)>0.005?' — <button onclick="applyBillRates()" class="underline text-sky-300 font-semibold">use in app</button>':' — in use ✓');
+    } else ins.classList.add('hidden');
+    const newestFirst=[...billsData].reverse();
+    newestFirst.forEach((b,i)=>{
+        const prev=newestFirst[i+1];
+        const days=billDays(b);
+        const dImp=prev&&prev.impKwh!=null&&b.impKwh!=null?b.impKwh-prev.impKwh:null;
+        const row=document.createElement('div');
+        row.className='rounded-2xl p-3 bg-white/[0.04] border border-white/[0.07]';
+        row.innerHTML=`
+            <div class="flex items-center justify-between mb-2">
+                <div>
+                    <span class="text-[14px] font-bold">${billLabel(b)}</span>
+                    <span class="text-[10px] text-white/30 ml-2">${b.dateStart||'?'} → ${b.dateEnd||'?'} · ${days}d</span>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="editBill(${b.id})" title="Edit bill" aria-label="Edit bill" class="w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"><i class="fas fa-pen text-[11px]"></i></button>
+                    <button onclick="deleteBill(${b.id})" title="Delete bill" aria-label="Delete bill" class="w-7 h-7 rounded-lg text-white/40 hover:text-red-400 hover:bg-white/10 transition-all"><i class="fas fa-trash text-[11px]"></i></button>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-2 text-center">
+                <div><div class="text-[13px] font-bold text-red-400 tabular-nums">${b.impKwh!=null?b.impKwh.toFixed(0):'—'}</div><div class="text-[9px] text-white/30">kWh in</div></div>
+                <div><div class="text-[13px] font-bold text-emerald-400 tabular-nums">${b.expKwh!=null?b.expKwh.toFixed(0):'—'}</div><div class="text-[9px] text-white/30">kWh out</div></div>
+                <div><div class="text-[13px] font-bold text-white/70 tabular-nums">${b.impKwh!=null?(b.impKwh/days).toFixed(1):'—'}</div><div class="text-[9px] text-white/30">kWh/day</div></div>
+                <div><div class="text-[13px] font-bold text-yellow-400 tabular-nums">${b.total!=null?b.total.toFixed(2):'—'}</div><div class="text-[9px] text-white/30">XCG total</div></div>
+            </div>
+            ${dImp!==null?`<div class="text-[10px] mt-2 ${dImp<=0?'text-emerald-400':'text-red-400'}">${dImp<=0?'↓':'↑'} ${Math.abs(dImp).toFixed(0)} kWh import vs previous bill</div>`:''}`;
+        list.appendChild(row);
+    });
+}
+function exportBillsCSV(){
+    if(!billsData.length){alert('No bills to export yet.');return;}
+    const cols=['period','dateStart','dateEnd','impKwh','expKwh','waterM3','costElec','credSolar','costPanel','costWater','costMeter','total'];
+    const rows=[cols.join(',')];
+    billsData.forEach(b=>rows.push(cols.map(c=>b[c]!=null?b[c]:'').join(',')));
+    const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='aqualectra-bills.csv';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+/* ═══════════════════════════════════════════════════════
+   NOTIFICATIONS (iOS 16.4+ PWA supports Web Push)
+═══════════════════════════════════════════════════════ */
+let _notifEnabled=false;
+
+function initNotifBtn(){
+    if(!('Notification' in window))return;
+    const btn=document.getElementById("notifBtn");
+    if(Notification.permission==='granted'){
+        _notifEnabled=true;
+        if(btn){btn.classList.remove("hidden");btn.title="Notifications on";btn.querySelector("i").className="fas fa-bell text-sm text-emerald-400";}
+        scheduleEveningNotif();
+    } else if(Notification.permission!=='denied'){
+        if(btn)btn.classList.remove("hidden");
+    }
+}
+
+async function requestNotifications(){
+    if(!('Notification' in window)){
+        alert("Notifications are not supported in this browser.\n\nOn iPhone, make sure the app is added to your Home Screen and you're running iOS 16.4 or later.");
+        return;
+    }
+    const perm=await Notification.requestPermission();
+    const btn=document.getElementById("notifBtn");
+    if(perm==='granted'){
+        _notifEnabled=true;
+        if(btn){btn.title="Notifications on";btn.querySelector("i").className="fas fa-bell text-sm text-emerald-400";}
+        scheduleEveningNotif();
+        new Notification("PowerDash",{body:"Evening reminders enabled — you'll get a nudge at 6 PM to log meter readings.",icon:"./icon.svg"});
+    } else {
+        if(btn){btn.title="Notifications blocked";btn.querySelector("i").className="fas fa-bell-slash text-sm text-red-400/70";}
+    }
+}
+
+let _notifTimer=null;
+function scheduleEveningNotif(){
+    if(_notifTimer)clearTimeout(_notifTimer);
+    const now=new Date();
+    const localH=((now.getUTCHours()-4)+24)%24+now.getUTCMinutes()/60;
+    // ms until 18:05 local (5 min after 6pm auto-save, so there's data to log)
+    let msUntil=((18.0833-localH+24)%24)*3600000;
+    if(msUntil<60000)msUntil+=24*3600000; // already past — schedule tomorrow
+    _notifTimer=setTimeout(()=>{
+        if(Notification.permission==='granted'){
+            const sol=(actualDailySolarKwh??dailySolarKwh).toFixed(1);
+            const imp=(actualDailyImportKwh??dailyImportKwh).toFixed(1);
+            new Notification("PowerDash — Evening Summary",{body:`☀️ Solar ${sol} kWh · ↓ Import ${imp} kWh\nTime to log your meter readings.`,icon:"./icon.svg",tag:"evening-summary",renotify:false});
+        }
+        scheduleEveningNotif(); // reschedule for tomorrow
+    },msUntil);
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+async function initialize(){
+    // Kick off the weather network request FIRST so it races in parallel
+    // with the rest of setup instead of waiting behind it.
+    loadWeatherCache(); // show any cached data instantly (even stale)
+    kickWeather();      // fresh fetch with cold-start retry budget
+    setInterval(kickWeather,5*60*1000); // refresh every 5 min
+
+    loadSettings(); // user system config first so derived values are ready
+    loadStats(); loadState(); // stats must load first so archiveDaySnapshot has statsData ready
+    loadBills(); renderBills(); // Aqualectra bill history
+    updateSolarDaily(); updateDailyImport(); updateDailyUsage(); updateDailyExport(); // init daily displays
+    checkEveningAutoSave(); // catch case where app opened after 6 PM
+    document.getElementById("solarManualInput").addEventListener("keydown",e=>{if(e.key==="Enter")applyManualSolar();});
+    document.getElementById("solarDailyInput").addEventListener("keydown",e=>{if(e.key==="Enter")setSolarDaily();});
+    document.getElementById("dailyUsageInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyUsage();});
+    document.getElementById("dailyImportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyImport();});
+    document.getElementById("dailyExportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyExport();});
+    setMode(acMode); setSetpoint(setpoint);
+    buildHistBars();
+    updateClock(); setInterval(updateClock,1000);
+    update(); setInterval(update,1200);
+    initNotifBtn();
+    setInterval(()=>{saveState();saveStats();checkEveningAutoSave();},10000);
+}
+// Script is at end of <body>, so DOM is already parsed — run now instead of
+// waiting for window.onload (which blocks on all CDN/font downloads).
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initialize);
+else initialize();
+
+/* ═══════════════════════════════════════════════════════
+   PWA — service worker + wake lock + install prompt
+═══════════════════════════════════════════════════════ */
+
+// Register service worker (enables offline + installability)
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// Wake Lock — keep screen on while dashboard is visible
+let _wakeLock=null;
+async function _requestWakeLock(){
+    if(!('wakeLock' in navigator))return;
+    try{ _wakeLock=await navigator.wakeLock.request('screen'); _wakeLock.addEventListener('release',()=>{_wakeLock=null;}); }catch(e){}
+}
+document.addEventListener('visibilitychange',async()=>{
+    if(document.visibilityState==='visible'){
+        if(!_wakeLock)await _requestWakeLock();
+        kickWeather(); // refresh radiation & weather whenever app comes to foreground
+    }
+});
+// iOS standalone PWAs also fire pageshow on resume (incl. from bfcache) —
+// belt-and-suspenders so a foreground always triggers a fresh load.
+window.addEventListener('pageshow',()=>{ if(document.visibilityState==='visible')kickWeather(); });
+_requestWakeLock();
+
+// Install prompt (Android Chrome shows a banner; iOS shows manual instructions)
+let _installPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault(); _installPrompt=e;
+    document.getElementById('installBtn').classList.remove('hidden');
+});
+window.addEventListener('appinstalled',()=>{
+    document.getElementById('installBtn').classList.add('hidden');
+    _installPrompt=null;
+});
+function installPWA(){
+    if(_installPrompt){ _installPrompt.prompt(); _installPrompt.userChoice.then(()=>{_installPrompt=null;}); return; }
+    // iOS: no prompt API — show instructions
+    alert('On iPhone/iPad:\n1. Tap the Share button (box with arrow)\n2. Tap "Add to Home Screen"\n3. Tap Add\n\nThe dashboard will then open as a full-screen app.');
+}
 </script>
 </body>
 </html>
