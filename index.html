@@ -1932,16 +1932,27 @@ function updateIndoor(out,ac){
 /* ═══════════════════════════════════════════════════════
    MAIN UPDATE TICK
 ═══════════════════════════════════════════════════════ */
+let _lastTickTs=null;
 function update(){
     checkDayRollover(); // reset daily counters when the clock passes midnight
+    // Integrate over the actual elapsed time rather than an assumed 1.2s tick —
+    // background-tab timer throttling (or a failed wake lock) can space ticks
+    // out much further apart, which would otherwise silently undercount kWh.
+    // Cap the gap so resuming after a long suspend doesn't dump a huge chunk
+    // of energy at the current instantaneous rate.
+    const now=Date.now();
+    // Clamp to [0, 10min]: the lower bound guards against the system clock
+    // ever moving backward (NTP correction, DST) briefly producing negative
+    // "elapsed" time, which would otherwise subtract energy instead of adding it.
+    const elapsedH=_lastTickTs!=null?Math.max(0,Math.min(600000,now-_lastTickTs))/3600000:1.2/3600;
+    _lastTickTs=now;
     const out=outdoorFeelsLike(),sol=solar(),ac=acPower(indoor,out);
     const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
     updateIndoor(out,ac);
     const house=ac+fridge.w+other,net=sol-house;
     const impW=Math.max(0,-net),expW=Math.max(0,net);
-    const tick=1.2/3600;
-    dailySolarKwh+=sol/1000*tick; dailyAcKwh+=ac/1000*tick;
-    dailyImportKwh+=impW/1000*tick; dailyExportKwh+=expW/1000*tick;
+    dailySolarKwh+=sol/1000*elapsedH; dailyAcKwh+=ac/1000*elapsedH;
+    dailyImportKwh+=impW/1000*elapsedH; dailyExportKwh+=expW/1000*elapsedH;
 
     // Cost projections (for monthly estimate) + running actual cost
     const acDayEst=acMode?AC_PROFILES[setpoint].dailyKwh:0.2;
@@ -2211,6 +2222,9 @@ function applyBillRates(){
     renderBills();update();
 }
 
+function escapeHtml(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function renderBills(){
     const list=document.getElementById('billsList'),ins=document.getElementById('billInsights');
     if(!list)return;
@@ -2240,7 +2254,7 @@ function renderBills(){
             <div class="flex items-center justify-between mb-2">
                 <div>
                     <span class="text-[14px] font-bold">${billLabel(b)}</span>
-                    <span class="text-[10px] text-white/30 ml-2">${b.dateStart||'?'} → ${b.dateEnd||'?'} · ${days}d</span>
+                    <span class="text-[10px] text-white/30 ml-2">${b.dateStart?escapeHtml(b.dateStart):'?'} → ${b.dateEnd?escapeHtml(b.dateEnd):'?'} · ${days}d</span>
                 </div>
                 <div class="flex gap-1">
                     <button onclick="editBill(${b.id})" title="Edit bill" aria-label="Edit bill" class="w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"><i class="fas fa-pen text-[11px]"></i></button>
@@ -2361,6 +2375,16 @@ else initialize();
 // Register service worker (enables offline + installability)
 if('serviceWorker' in navigator){
     navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    // This dashboard is meant to stay open continuously (wake lock keeps the
+    // screen on), so without this a shipped update would sit in the new SW
+    // waiting forever — skipWaiting/clients.claim take over network control,
+    // but the already-loaded page keeps running the old JS until reloaded.
+    let _swRefreshing=false;
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(_swRefreshing)return;
+        _swRefreshing=true;
+        window.location.reload();
+    });
 }
 
 // Wake Lock — keep screen on while dashboard is visible

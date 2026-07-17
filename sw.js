@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v99-update';
-// Force update: Projected full day card moved above Energy Statistics section
+const CACHE = 'powerdash-v100-bugfixes';
+// Force update: real-elapsed-time kWh accounting, bill-field XSS fix, SW auto-reload
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
