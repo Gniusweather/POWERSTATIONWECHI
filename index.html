@@ -148,7 +148,7 @@
         .chart-col { display:flex; flex-direction:column; align-items:center; flex:1; min-width:0; }
         .chart-bars { display:flex; align-items:flex-end; gap:2px; width:100%; justify-content:center; }
         .cbar { border-radius:3px 3px 0 0; min-height:2px; transition:height 0.7s cubic-bezier(0.4,0,0.2,1); width:100%; }
-        .chart-lbl { font-size:9px; color:rgba(255,255,255,0.35); margin-top:4px; text-align:center; white-space:nowrap; }
+        .chart-lbl { font-size:11px; color:rgba(255,255,255,0.35); margin-top:4px; text-align:center; white-space:nowrap; }
         .chart-lbl.today { color:#34d399; font-weight:700; }
 
         /* ── STAT TILE ── */
@@ -227,27 +227,27 @@
                 <div>
                     <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>🌞</span>Solar panel peak power (W)</label>
                     <input id="setPeak" type="number" min="100" step="10" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
-                    <div class="text-[10px] text-white/30 mt-1">Total rated wattage of all your panels combined.</div>
+                    <div class="text-[12px] text-white/30 mt-1">Total rated wattage of all your panels combined.</div>
                 </div>
                 <div>
                     <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>💰</span>Electricity import rate (XCG/kWh)</label>
                     <input id="setRate" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
-                    <div class="text-[10px] text-white/30 mt-1">What you pay the utility per kWh used.</div>
+                    <div class="text-[12px] text-white/30 mt-1">What you pay the utility per kWh used.</div>
                 </div>
                 <div>
                     <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>⬆️</span>Feed-in / export credit (XCG/kWh)</label>
                     <input id="setExport" type="number" min="0" step="0.01" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
-                    <div class="text-[10px] text-white/30 mt-1">What the utility credits you for exported solar (0 if none).</div>
+                    <div class="text-[12px] text-white/30 mt-1">What the utility credits you for exported solar (0 if none).</div>
                 </div>
                 <div>
                     <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>❄️</span>AC peak power (W)</label>
                     <input id="setAcPeak" type="number" min="300" step="50" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
-                    <div class="text-[10px] text-white/30 mt-1">Rated/running wattage of your AC unit. Scales all AC load &amp; cost estimates (≈1280 W for a small split, ≈2500 W for a large one).</div>
+                    <div class="text-[12px] text-white/30 mt-1">Rated/running wattage of your AC unit. Scales all AC load &amp; cost estimates (≈1280 W for a small split, ≈2500 W for a large one).</div>
                 </div>
                 <div>
                     <label class="text-xs text-white/55 mb-1.5 flex items-center gap-1.5"><span>🧊</span>Fridge running power (W)</label>
                     <input id="setFridge" type="number" min="20" step="5" class="solar-input rounded-xl px-3 py-2.5 text-sm w-full">
-                    <div class="text-[10px] text-white/30 mt-1">Compressor draw while running (check the label or a plug meter).</div>
+                    <div class="text-[12px] text-white/30 mt-1">Compressor draw while running (check the label or a plug meter).</div>
                 </div>
             </div>
 
@@ -263,7 +263,7 @@
 
             <!-- Data utilities -->
             <div class="mt-5 pt-4 border-t border-white/[0.08]">
-                <div class="text-[10px] text-white/35 tracking-widest mb-2.5">DATA</div>
+                <div class="text-[12px] text-white/35 tracking-widest mb-2.5">DATA</div>
                 <div class="flex gap-2">
                     <button onclick="exportStatsCSV()" aria-label="Export stats as CSV" class="flex-1 px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/70 hover:bg-white/10 transition-all border border-white/10">
                         <i class="fas fa-file-csv mr-1.5 text-emerald-400"></i>Export CSV
@@ -272,7 +272,7 @@
                         <i class="fas fa-rotate-left mr-1.5 text-amber-400"></i>Reset Today
                     </button>
                 </div>
-                <div class="text-[10px] text-white/25 mt-1.5">Export downloads your 30-day history. Reset zeroes today's running counters and clears manual entries.</div>
+                <div class="text-[12px] text-white/25 mt-1.5">Export downloads your 30-day history. Reset zeroes today's running counters and clears manual entries.</div>
             </div>
         </div>
     </div>
@@ -368,13 +368,13 @@
 
         <!-- POWER FLOW -->
         <div class="card rounded-3xl p-5 card-accent-green">
-            <div class="text-[10px] text-white/35 tracking-[0.2em] mb-4 text-center">LIVE POWER FLOW · <span id="selfSuff" class="text-emerald-400/70">—% SOLAR-POWERED</span></div>
+            <div class="text-[12px] text-white/35 tracking-[0.2em] mb-4 text-center">LIVE POWER FLOW · <span id="selfSuff" class="text-emerald-400/70">—% SOLAR-POWERED</span></div>
             <div class="flex items-center gap-2">
 
                 <div class="flow-node flow-node-solar">
                     <div class="text-3xl mb-1.5" style="filter:drop-shadow(0 0 12px rgba(250,204,21,0.5))">🌞</div>
                     <div id="flowSolarW" class="text-base font-bold text-emerald-400 tabular-nums">0 W</div>
-                    <div class="text-[10px] text-emerald-400/60 mt-0.5">SOLAR</div>
+                    <div class="text-[12px] text-emerald-400/60 mt-0.5">SOLAR</div>
                 </div>
 
                 <div class="flow-line">
@@ -388,7 +388,7 @@
                 <div class="flow-node flow-node-house">
                     <div class="text-3xl mb-1.5">🏠</div>
                     <div id="flowHouseW" class="text-base font-bold text-orange-300 tabular-nums">0 W</div>
-                    <div class="text-[10px] text-orange-300/60 mt-0.5">HOUSE</div>
+                    <div class="text-[12px] text-orange-300/60 mt-0.5">HOUSE</div>
                 </div>
 
                 <div class="flow-line">
@@ -402,7 +402,7 @@
                 <div class="flow-node flow-node-grid" id="flowGridNode">
                     <div class="text-3xl mb-1.5">🔌</div>
                     <div id="flowGridW" class="text-base font-bold text-emerald-400 tabular-nums">0 W</div>
-                    <div id="flowGridLbl" class="text-[10px] text-emerald-400/60 mt-0.5">EXPORT</div>
+                    <div id="flowGridLbl" class="text-[12px] text-emerald-400/60 mt-0.5">EXPORT</div>
                 </div>
 
             </div>
@@ -418,11 +418,11 @@
                         <div id="wxIcon" class="text-2xl leading-none" style="filter:drop-shadow(0 0 14px rgba(250,200,30,0.55))">⛅</div>
                         <div>
                             <div class="text-[13px] font-bold">Bonaire</div>
-                            <div id="wxCondition" class="text-[9px] text-sky-400 tracking-widest uppercase mt-0.5">—</div>
+                            <div id="wxCondition" class="text-[11px] text-sky-400 tracking-widest uppercase mt-0.5">—</div>
                         </div>
                     </div>
                     <div class="text-right">
-                        <div id="wxObsTime" class="text-[10px] text-white/25">KNMI Bonaire</div>
+                        <div id="wxObsTime" class="text-[12px] text-white/25">KNMI Bonaire</div>
                     </div>
                 </div>
 
@@ -430,24 +430,24 @@
                 <div class="flex items-end gap-3 mb-3">
                     <div>
                         <div id="wxFeels" class="text-3xl font-bold text-white">—°</div>
-                        <div class="text-[9px] text-white/35 tracking-wider mt-0.5">FEELS</div>
+                        <div class="text-[11px] text-white/35 tracking-wider mt-0.5">FEELS</div>
                     </div>
                     <div class="mb-1 space-y-1">
                         <div class="flex items-baseline gap-1">
                             <span id="wxAir" class="text-lg font-bold text-white/75 tabular-nums">—</span>
-                            <span class="text-[9px] text-white/35">°C</span>
+                            <span class="text-[11px] text-white/35">°C</span>
                         </div>
                         <div class="flex items-baseline gap-1">
                             <span id="wxDew" class="text-sm font-semibold text-sky-300 tabular-nums">—</span>
-                            <span class="text-[9px] text-white/35">dew</span>
+                            <span class="text-[11px] text-white/35">dew</span>
                         </div>
                         <div class="flex items-baseline gap-1">
                             <span id="wxRh" class="text-sm font-semibold text-sky-200 tabular-nums">—</span>
-                            <span class="text-[9px] text-white/35">rh%</span>
+                            <span class="text-[11px] text-white/35">rh%</span>
                         </div>
                         <div class="flex items-baseline gap-1">
                             <span id="wxCloud" class="text-sm font-semibold text-white/55 tabular-nums">—</span>
-                            <span class="text-[9px] text-white/35">okta</span>
+                            <span class="text-[11px] text-white/35">okta</span>
                         </div>
                     </div>
                     <div class="ml-auto text-right mb-1">
@@ -455,7 +455,7 @@
                             <span id="wxPressureTrend" class="text-lg font-bold text-purple-300"></span>
                             <span id="wxPressure" class="text-[13px] font-semibold text-purple-300">— hPa</span>
                         </div>
-                        <div id="wxPressureHint" class="text-[10px] text-white/25 mt-0.5">pressure</div>
+                        <div id="wxPressureHint" class="text-[12px] text-white/25 mt-0.5">pressure</div>
                     </div>
                 </div>
 
@@ -464,17 +464,17 @@
 
                     <!-- Wind -->
                     <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
-                        <div class="text-[10px] text-white/35 tracking-widest">WIND</div>
+                        <div class="text-[12px] text-white/35 tracking-widest">WIND</div>
                         <svg viewBox="-44 -44 88 88" width="76" height="76">
                             <circle r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
                             <line x1="0" y1="-42" x2="0" y2="-35" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
                             <line x1="0" y1="42" x2="0" y2="35" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
                             <line x1="42" y1="0" x2="35" y2="0" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
                             <line x1="-42" y1="0" x2="-35" y2="0" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-                            <text x="0" y="-29" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.65)" font-weight="700" font-family="Inter,sans-serif">N</text>
-                            <text x="0" y="38"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">S</text>
-                            <text x="37" y="3"  text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">E</text>
-                            <text x="-37" y="3" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">W</text>
+                            <text x="0" y="-29" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.65)" font-weight="700" font-family="Inter,sans-serif">N</text>
+                            <text x="0" y="38"  text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">S</text>
+                            <text x="37" y="3"  text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">E</text>
+                            <text x="-37" y="3" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.3)" font-family="Inter,sans-serif">W</text>
                             <g id="compassGroup" style="transition:transform 1.6s cubic-bezier(0.34,1.1,0.64,1)">
                                 <line x1="0" y1="-27" x2="0" y2="0"  stroke="#f87171" stroke-width="2.5" stroke-linecap="round"/>
                                 <line x1="0" y1="0"   x2="0" y2="17" stroke="rgba(255,255,255,0.22)" stroke-width="2" stroke-linecap="round"/>
@@ -484,17 +484,17 @@
                         <div class="text-center leading-tight">
                             <div id="wxWindKt" class="text-[17px] font-bold text-sky-300 tabular-nums" style="text-shadow:0 0 16px rgba(125,211,252,0.65)">— kt</div>
                             <div id="wxWindDir" class="text-xs text-white/45">—</div>
-                            <div id="wxGustKt" class="text-[10px] text-white/30 mt-0.5">gust — kt</div>
+                            <div id="wxGustKt" class="text-[12px] text-white/30 mt-0.5">gust — kt</div>
                         </div>
                     </div>
 
                     <!-- Rain -->
                     <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
-                        <div class="text-[10px] text-white/35 tracking-widest">RAIN</div>
+                        <div class="text-[12px] text-white/35 tracking-widest">RAIN</div>
                         <div class="rain-wrap w-full" id="rainWrap"></div>
                         <div class="text-center leading-tight mt-1">
                             <div id="wxPrecip" class="text-[17px] font-bold text-blue-300 tabular-nums">—</div>
-                            <div class="text-[10px] text-white/30" id="wxPrecipPeriod">per 10 min</div>
+                            <div class="text-[12px] text-white/30" id="wxPrecipPeriod">per 10 min</div>
                             <div id="wxRainStatus" class="text-xs text-white/45 mt-0.5">—</div>
                         </div>
                     </div>
@@ -536,30 +536,30 @@
 
             <!-- ═══ PROJECTED FULL DAY ═══ -->
             <div class="card rounded-2xl p-3 card-accent-purple lg:col-span-2">
-                <div class="text-[10px] text-purple-300/70 tracking-widest mb-2 flex items-center gap-1.5">
-                    <i class="fas fa-wand-magic-sparkles text-[9px]"></i>
+                <div class="text-[12px] text-purple-300/70 tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fas fa-wand-magic-sparkles text-[11px]"></i>
                     PROJECTED FULL DAY
-                    <span id="projAcTag" class="ml-auto text-[9px] text-white/25"></span>
+                    <span id="projAcTag" class="ml-auto text-[11px] text-white/25"></span>
                 </div>
                 <div class="grid grid-cols-4 gap-2 text-center">
                     <div>
                         <div class="text-[11px] font-bold text-emerald-400 tabular-nums" id="projSolar">—</div>
-                        <div class="text-[9px] text-white/30 mt-0.5">Solar</div>
+                        <div class="text-[11px] text-white/30 mt-0.5">Solar</div>
                     </div>
                     <div>
                         <div class="text-[11px] font-bold text-orange-400 tabular-nums" id="projUsage">—</div>
-                        <div class="text-[9px] text-white/30 mt-0.5">Usage</div>
+                        <div class="text-[11px] text-white/30 mt-0.5">Usage</div>
                     </div>
                     <div>
                         <div class="text-[11px] font-bold text-red-400 tabular-nums" id="projImport">—</div>
-                        <div class="text-[9px] text-white/30 mt-0.5">Import</div>
+                        <div class="text-[11px] text-white/30 mt-0.5">Import</div>
                     </div>
                     <div>
                         <div class="text-[11px] font-bold text-emerald-300 tabular-nums" id="projExport">—</div>
-                        <div class="text-[9px] text-white/30 mt-0.5">Export</div>
+                        <div class="text-[11px] text-white/30 mt-0.5">Export</div>
                     </div>
                 </div>
-                <div class="mt-2 text-center text-[10px] text-white/30">
+                <div class="mt-2 text-center text-[12px] text-white/30">
                     Cost ~<span id="projCost" class="text-yellow-400 font-semibold">—</span> XCG
                     <span class="mx-1.5 text-white/15">·</span>
                     <span id="projSelfSuf" class="text-emerald-400 font-semibold">—</span> self-sufficient
@@ -587,7 +587,7 @@
                         </svg>
                         <div class="absolute inset-0 flex flex-col items-center justify-center">
                             <div id="solarPctLabel" class="text-[13px] font-bold text-emerald-400 tabular-nums">0%</div>
-                            <div class="text-[9px] text-white/35">peak</div>
+                            <div class="text-[11px] text-white/35">peak</div>
                         </div>
                     </div>
                 </div>
@@ -673,65 +673,6 @@
                         <span class="text-white/45">∆ vs setpoint</span>
                         <span id="indoorDelta" class="font-semibold tabular-nums">—</span>
                     </div>
-                </div>
-            </div>
-
-            <!-- AC LOAD -->
-            <div class="card rounded-3xl p-4 card-accent-cyan" id="acCard">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="text-3xl">❄️</div>
-                    <div>
-                        <div class="text-[15px] font-bold">AC Load</div>
-                        <div id="acModeLabel" class="text-[11px] text-cyan-400">ON · 28°C</div>
-                    </div>
-                </div>
-                <div id="ac" class="text-4xl font-bold text-cyan-400 tabular-nums" style="text-shadow:0 0 20px rgba(34,211,238,0.3)">0 W</div>
-                <div class="flex items-center gap-2 mt-3">
-                    <div class="h-2 flex-1 bg-white/10 rounded-full overflow-hidden">
-                        <div id="acBar" class="h-full w-0 rounded-full transition-all duration-700"></div>
-                    </div>
-                    <span id="acPct" class="text-[11px] font-mono text-white/55 w-8 text-right tabular-nums">0%</span>
-                </div>
-                <div id="acEffLabel" class="text-[11px] text-white/35 mt-1">Standby</div>
-                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
-                    <span class="text-white/45">Est. today</span>
-                    <span id="acDaily" class="font-bold text-cyan-400 tabular-nums">0.0 kWh</span>
-                </div>
-            </div>
-
-            <!-- FRIDGE -->
-            <div class="card rounded-3xl p-4 card-accent-blue">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="text-3xl">🧊</div>
-                    <div>
-                        <div class="text-[15px] font-bold">Small Fridge</div>
-                        <div class="text-[11px] text-blue-300 flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot inline-block"></span>
-                            ALWAYS ON · 24H
-                        </div>
-                    </div>
-                </div>
-                <div id="fridge" class="text-4xl font-bold text-blue-300 tabular-nums">0 W</div>
-                <div id="fridgeState" class="text-[11px] text-white/45 mt-1">Compressor running</div>
-                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
-                    <span class="text-white/45">~ per day</span>
-                    <span id="fridgeDaily" class="font-bold text-blue-300 tabular-nums">2.0 kWh</span>
-                </div>
-            </div>
-
-            <!-- OTHER -->
-            <div class="card rounded-3xl p-4">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="text-3xl">💡</div>
-                    <div>
-                        <div class="text-[15px] font-bold">Other Loads</div>
-                        <div class="text-[11px] text-white/40">Lights · WiFi · Standby</div>
-                    </div>
-                </div>
-                <div id="other" class="text-4xl font-bold text-white/75 tabular-nums">0 W</div>
-                <div class="mt-3 pt-3 border-t border-white/[0.07] flex justify-between text-sm">
-                    <span class="text-white/45">~ per day</span>
-                    <span id="otherDaily" class="font-bold text-white/60 tabular-nums">1.0 kWh</span>
                 </div>
             </div>
 
@@ -848,22 +789,22 @@
             <div id="statsDay">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
                         <div id="stTodaySolar" class="text-xl font-bold text-emerald-400 tabular-nums">0.0 kWh</div>
                         <div id="stTodaySolarVsYest" class="text-[11px] text-white/40 mt-0.5">vs yesterday —</div>
                     </div>
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 COST</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">💰 COST</div>
                         <div id="stTodayCost" class="text-xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
                         <div id="stTodayCostVsYest" class="text-[11px] text-white/40 mt-0.5">vs yesterday —</div>
                     </div>
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">⬆️ EXPORT</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">⬆️ EXPORT</div>
                         <div id="stTodayExport" class="text-xl font-bold text-emerald-300 tabular-nums">0.0 kWh</div>
                         <div class="text-[11px] text-white/40 mt-0.5">to grid today</div>
                     </div>
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">⬇️ IMPORT</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">⬇️ IMPORT</div>
                         <div id="stTodayImport" class="text-xl font-bold text-red-400 tabular-nums">0.0 kWh</div>
                         <div class="text-[11px] text-white/40 mt-0.5">from grid today</div>
                     </div>
@@ -871,22 +812,22 @@
                 <!-- AC / Fridge / Other breakdown for today -->
                 <div class="grid grid-cols-3 gap-3">
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">❄️ AC</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">❄️ AC</div>
                         <div id="stTodayAc" class="text-lg font-bold text-cyan-400 tabular-nums">0.0 kWh</div>
                     </div>
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">🧊 FRIDGE</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">🧊 FRIDGE</div>
                         <div id="stTodayFridge" class="text-lg font-bold text-blue-300 tabular-nums">2.0 kWh</div>
                     </div>
                     <div class="stat-tile">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💡 OTHER</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">💡 OTHER</div>
                         <div id="stTodayOther" class="text-lg font-bold text-white/60 tabular-nums">1.0 kWh</div>
                     </div>
                 </div>
 
                 <!-- Self-sufficiency banner -->
                 <div class="mt-3 rounded-xl px-3 py-2 flex items-center justify-between" style="background:rgba(52,211,153,0.06);border:1px solid rgba(52,211,153,0.15)">
-                    <span class="text-[10px] text-white/35 tracking-widest">⚡ SELF-SUFFICIENCY</span>
+                    <span class="text-[12px] text-white/35 tracking-widest">⚡ SELF-SUFFICIENCY</span>
                     <span id="stTodaySelfSuf" class="text-[13px] font-bold text-emerald-400">— %</span>
                 </div>
 
@@ -895,7 +836,7 @@
                     <div class="text-[12px] font-semibold text-purple-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-meter text-purple-400"></i>
                         DAILY METER READINGS
-                        <span class="text-[10px] font-normal text-white/35 ml-1">overrides estimates</span>
+                        <span class="text-[12px] font-normal text-white/35 ml-1">overrides estimates</span>
                     </div>
                     <div class="grid grid-cols-1 gap-3">
                         <!-- Total usage -->
@@ -917,7 +858,7 @@
                                     <i class="fas fa-xmark"></i>
                                 </button>
                             </div>
-                            <div id="dailyUsageInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                            <div id="dailyUsageInfo" class="text-[12px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
                         </div>
                         <!-- Grid import -->
                         <div>
@@ -938,7 +879,7 @@
                                     <i class="fas fa-xmark"></i>
                                 </button>
                             </div>
-                            <div id="dailyImportInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                            <div id="dailyImportInfo" class="text-[12px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
                         </div>
                         <!-- Grid export -->
                         <div>
@@ -958,8 +899,8 @@
                                     <i class="fas fa-xmark"></i>
                                 </button>
                             </div>
-                            <div id="dailyExportInfo" class="text-[10px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
-                            <div id="exportIfAcOff" class="text-[10px] text-emerald-300/70 mt-1">If AC OFF: ~0.0 kWh export</div>
+                            <div id="dailyExportInfo" class="text-[12px] text-white/50 mt-1">Estimated: 0.0 kWh</div>
+                            <div id="exportIfAcOff" class="text-[12px] text-emerald-300/70 mt-1">If AC OFF: ~0.0 kWh export</div>
                         </div>
                         <!-- Preview -->
                         <div id="meterPreview" class="hidden text-[11px] text-emerald-300 rounded-xl px-3 py-2" style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.18)">
@@ -973,28 +914,28 @@
             <div id="statsWeek" class="hidden">
                 <div class="grid grid-cols-3 gap-3 mb-4">
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ 7-DAY SOLAR</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">☀️ 7-DAY SOLAR</div>
                         <div id="st7Solar" class="text-xl font-bold text-emerald-400 tabular-nums">— kWh</div>
                     </div>
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 7-DAY COST</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">💰 7-DAY COST</div>
                         <div id="st7Cost" class="text-xl font-bold text-yellow-400 tabular-nums">— XCG</div>
                     </div>
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">📊 DAILY AVG</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">📊 DAILY AVG</div>
                         <div id="st7Avg" class="text-xl font-bold text-purple-400 tabular-nums">— kWh</div>
                     </div>
                 </div>
                 <!-- 7-day chart -->
                 <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
-                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-white/35">
+                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[12px] text-white/35">
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-emerald-400 inline-block"></span>Solar</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-orange-400 inline-block"></span>Usage</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-400 inline-block"></span>Import</span>
                         <span class="ml-auto text-white/25">kWh/day</span>
                     </div>
                     <div class="flex gap-2">
-                        <div class="flex flex-col justify-between text-[9px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
+                        <div class="flex flex-col justify-between text-[11px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
                             <span>10</span><span>5</span><span>0</span>
                         </div>
                         <div class="flex-1 relative h-44">
@@ -1013,32 +954,32 @@
             <div id="statsMonth" class="hidden">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">☀️ SOLAR</div>
                         <div id="st30Solar" class="text-xl font-bold text-emerald-400 tabular-nums">— kWh</div>
                     </div>
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">💰 TOTAL COST</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">💰 TOTAL COST</div>
                         <div id="st30Cost" class="text-xl font-bold text-yellow-400 tabular-nums">— XCG</div>
                     </div>
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">🏆 BEST DAY</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">🏆 BEST DAY</div>
                         <div id="st30Best" class="text-xl font-bold text-emerald-300 tabular-nums">— kWh</div>
                     </div>
                     <div class="stat-tile text-center">
-                        <div class="text-[10px] text-white/35 tracking-widest mb-1">📉 WORST DAY</div>
+                        <div class="text-[12px] text-white/35 tracking-widest mb-1">📉 WORST DAY</div>
                         <div id="st30Worst" class="text-xl font-bold text-red-400 tabular-nums">— kWh</div>
                     </div>
                 </div>
                 <!-- 30-day chart -->
                 <div class="bg-white/[0.03] rounded-2xl p-4 border border-white/[0.06]">
-                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[10px] text-white/35">
+                    <div class="flex flex-wrap items-center gap-3 mb-2 text-[12px] text-white/35">
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-emerald-400 inline-block"></span>Solar</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-orange-400 inline-block"></span>Usage</span>
                         <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-400 inline-block"></span>Import</span>
                         <span class="ml-auto text-white/25">kWh/day</span>
                     </div>
                     <div class="flex gap-2">
-                        <div class="flex flex-col justify-between text-[9px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
+                        <div class="flex flex-col justify-between text-[11px] text-white/30 tabular-nums h-44 py-0.5 text-right" style="width:26px">
                             <span>10</span><span>5</span><span>0</span>
                         </div>
                         <div class="flex-1 relative h-44">
@@ -1281,7 +1222,7 @@ let currentStatsTab='day';
    PERSISTENCE — APP STATE
 ═══════════════════════════════════════════════════════ */
 function saveState(){
-    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,day:new Date().toDateString()}));}catch(e){}
+    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,lastTickTs:_lastTickTs,day:new Date().toDateString()}));}catch(e){}
 }
 function loadState(){
     try{
@@ -1292,6 +1233,11 @@ function loadState(){
             // Same day — restore running counters
             dailySolarKwh=s.dailySolarKwh||0;dailyAcKwh=s.dailyAcKwh||0;
             dailyImportKwh=s.dailyImportKwh||0;dailyExportKwh=s.dailyExportKwh||0;
+            // Restore the last-active timestamp so the first tick after reopening
+            // (even hours later, with the app fully closed the whole time) bills
+            // that closed time at the current AC on/off + fridge/other rate instead
+            // of silently dropping it — see update()'s elapsedH calculation.
+            if(typeof s.lastTickTs==='number')_lastTickTs=s.lastTickTs;
             actualDailySolarKwh=typeof s.actualDailySolarKwh==='number'?s.actualDailySolarKwh:null;
             actualDailyImportKwh=typeof s.actualDailyImportKwh==='number'?s.actualDailyImportKwh:null;
             actualDailyUsageKwh=typeof s.actualDailyUsageKwh==='number'?s.actualDailyUsageKwh:null;
@@ -1385,7 +1331,6 @@ function setSetpoint(t){
     updateAcLabels();saveState();update();
 }
 function updateAcLabels(){
-    document.getElementById("acModeLabel").innerText=acMode?`ON · ${setpoint}°C`:"OFF";
     document.getElementById("setpointLabel").innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";
 }
 
@@ -1741,7 +1686,7 @@ function updateFlowCard(sol,house,net){
     const exp=net>=0;
     document.getElementById("flowGridW").innerText=(exp?"+":"")+net+" W";
     document.getElementById("flowGridLbl").innerText=exp?"EXPORT":"IMPORT";
-    document.getElementById("flowGridLbl").className="text-[10px] mt-0.5 "+(exp?"text-emerald-400/60":"text-red-400/60");
+    document.getElementById("flowGridLbl").className="text-[12px] mt-0.5 "+(exp?"text-emerald-400/60":"text-red-400/60");
     document.getElementById("flowGridW").className="text-base font-bold tabular-nums "+(exp?"text-emerald-400":"text-red-400");
     const gn=document.getElementById("flowGridNode");
     gn.className="flow-node "+(exp?"flow-node-grid":"flow-node-grid importing");
@@ -1936,15 +1881,19 @@ let _lastTickTs=null;
 function update(){
     checkDayRollover(); // reset daily counters when the clock passes midnight
     // Integrate over the actual elapsed time rather than an assumed 1.2s tick —
-    // background-tab timer throttling (or a failed wake lock) can space ticks
-    // out much further apart, which would otherwise silently undercount kWh.
-    // Cap the gap so resuming after a long suspend doesn't dump a huge chunk
-    // of energy at the current instantaneous rate.
+    // background-tab timer throttling (or the app being fully closed) can space
+    // ticks out much further apart, which would otherwise silently drop that
+    // time from today's kWh/cost instead of billing it at the current AC
+    // on/off + fridge/other rate. _lastTickTs is persisted (see saveState),
+    // so this also backfills the gap across a full close-and-reopen, not just
+    // gaps within one open session.
     const now=Date.now();
-    // Clamp to [0, 10min]: the lower bound guards against the system clock
-    // ever moving backward (NTP correction, DST) briefly producing negative
-    // "elapsed" time, which would otherwise subtract energy instead of adding it.
-    const elapsedH=_lastTickTs!=null?Math.max(0,Math.min(600000,now-_lastTickTs))/3600000:1.2/3600;
+    // Clamp to [0, 24h]: the lower bound guards against the system clock ever
+    // moving backward (NTP correction, DST) briefly producing negative
+    // "elapsed" time, which would otherwise subtract energy instead of adding
+    // it; the upper bound is just a sanity ceiling (same-day gaps, which is
+    // all loadState restores _lastTickTs for, can never exceed 24h anyway).
+    const elapsedH=_lastTickTs!=null?Math.max(0,Math.min(86400000,now-_lastTickTs))/3600000:1.2/3600;
     _lastTickTs=now;
     const out=outdoorFeelsLike(),sol=solar(),ac=acPower(indoor,out);
     const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
@@ -1968,29 +1917,11 @@ function update(){
     document.getElementById("headerSolarKwh").innerText="SOLAR "+dailySolarKwh.toFixed(1)+" kWh";
     updateSolarGauge(sol); updateSolarSourceUI(); updateSolarDaily(); updateDailyUsage(); updateDailyImport();
 
-    // AC
-    const acPct=Math.min(100,Math.round(ac/MAX_AC*100));
-    document.getElementById("ac").innerText=ac+" W";
-    document.getElementById("acDaily").innerText=dailyAcKwh.toFixed(1)+" kWh";
-    document.getElementById("acBar").style.width=acPct+"%";
-    document.getElementById("acBar").style.background=acPct>75?"linear-gradient(to right,#f97316,#ef4444)":acPct>45?"linear-gradient(to right,#22d3ee,#3b82f6)":"linear-gradient(to right,#22d3ee,#06b6d4)";
-    document.getElementById("acPct").innerText=acPct+"%";
-    document.getElementById("acEffLabel").innerText=!acMode?"Standby":acPct<30?"Low load":acPct<60?"Normal":acPct<80?"High load":"Peak load";
-
     // Indoor
     document.getElementById("indoor").innerText=indoor.toFixed(1)+"°C";
     const delta=indoor-setpoint;
     document.getElementById("indoorDelta").innerText=(delta>=0?"+":"")+delta.toFixed(1)+"°C";
     document.getElementById("indoorDelta").className="font-semibold tabular-nums "+(Math.abs(delta)<0.5?"text-emerald-400":Math.abs(delta)<1.5?"text-yellow-400":"text-red-400");
-
-    // Fridge
-    document.getElementById("fridge").innerText=fridge.w+" W";
-    document.getElementById("fridgeState").innerText=fridge.running?"Compressor running":"Idle (cycling)";
-    document.getElementById("fridgeDaily").innerText=FRIDGE_DAILY.toFixed(1)+" kWh";
-
-    // Other
-    document.getElementById("other").innerText=other+" W";
-    document.getElementById("otherDaily").innerText=OTHER_DAILY.toFixed(1)+" kWh";
 
     // House
     document.getElementById("houseTotal").innerText=house+" W";
@@ -2254,7 +2185,7 @@ function renderBills(){
             <div class="flex items-center justify-between mb-2">
                 <div>
                     <span class="text-[14px] font-bold">${billLabel(b)}</span>
-                    <span class="text-[10px] text-white/30 ml-2">${b.dateStart?escapeHtml(b.dateStart):'?'} → ${b.dateEnd?escapeHtml(b.dateEnd):'?'} · ${days}d</span>
+                    <span class="text-[12px] text-white/30 ml-2">${b.dateStart?escapeHtml(b.dateStart):'?'} → ${b.dateEnd?escapeHtml(b.dateEnd):'?'} · ${days}d</span>
                 </div>
                 <div class="flex gap-1">
                     <button onclick="editBill(${b.id})" title="Edit bill" aria-label="Edit bill" class="w-7 h-7 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all"><i class="fas fa-pen text-[11px]"></i></button>
@@ -2262,12 +2193,12 @@ function renderBills(){
                 </div>
             </div>
             <div class="grid grid-cols-4 gap-2 text-center">
-                <div><div class="text-[13px] font-bold text-red-400 tabular-nums">${b.impKwh!=null?b.impKwh.toFixed(0):'—'}</div><div class="text-[9px] text-white/30">kWh in</div></div>
-                <div><div class="text-[13px] font-bold text-emerald-400 tabular-nums">${b.expKwh!=null?b.expKwh.toFixed(0):'—'}</div><div class="text-[9px] text-white/30">kWh out</div></div>
-                <div><div class="text-[13px] font-bold text-white/70 tabular-nums">${b.impKwh!=null?(b.impKwh/days).toFixed(1):'—'}</div><div class="text-[9px] text-white/30">kWh/day</div></div>
-                <div><div class="text-[13px] font-bold text-yellow-400 tabular-nums">${b.total!=null?b.total.toFixed(2):'—'}</div><div class="text-[9px] text-white/30">XCG total</div></div>
+                <div><div class="text-[13px] font-bold text-red-400 tabular-nums">${b.impKwh!=null?b.impKwh.toFixed(0):'—'}</div><div class="text-[11px] text-white/30">kWh in</div></div>
+                <div><div class="text-[13px] font-bold text-emerald-400 tabular-nums">${b.expKwh!=null?b.expKwh.toFixed(0):'—'}</div><div class="text-[11px] text-white/30">kWh out</div></div>
+                <div><div class="text-[13px] font-bold text-white/70 tabular-nums">${b.impKwh!=null?(b.impKwh/days).toFixed(1):'—'}</div><div class="text-[11px] text-white/30">kWh/day</div></div>
+                <div><div class="text-[13px] font-bold text-yellow-400 tabular-nums">${b.total!=null?b.total.toFixed(2):'—'}</div><div class="text-[11px] text-white/30">XCG total</div></div>
             </div>
-            ${dImp!==null?`<div class="text-[10px] mt-2 ${dImp<=0?'text-emerald-400':'text-red-400'}">${dImp<=0?'↓':'↑'} ${Math.abs(dImp).toFixed(0)} kWh import vs previous bill</div>`:''}`;
+            ${dImp!==null?`<div class="text-[12px] mt-2 ${dImp<=0?'text-emerald-400':'text-red-400'}">${dImp<=0?'↓':'↑'} ${Math.abs(dImp).toFixed(0)} kWh import vs previous bill</div>`:''}`;
         list.appendChild(row);
     });
 }
