@@ -1215,6 +1215,10 @@ let _autoSavedDate=null;       // tracks which day the 6pm auto-save already ran
 let _runningDay=new Date().toDateString(); // day the live counters belong to
 let knmiData=null, manualSolarW=null, manualSolarTime=null;
 let solarHistory=new Array(20).fill(0);
+// Sparse log of {ts,radiation} samples for today, used to reconstruct solar
+// output during a closed-app gap instead of assuming the reopen-time reading
+// applied for the whole gap. Reset at day rollover — see checkDayRollover().
+let radiationLog=[];
 let statsData=[];
 let currentStatsTab='day';
 
@@ -1222,7 +1226,7 @@ let currentStatsTab='day';
    PERSISTENCE — APP STATE
 ═══════════════════════════════════════════════════════ */
 function saveState(){
-    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,lastTickTs:_lastTickTs,day:new Date().toDateString()}));}catch(e){}
+    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,lastTickTs:_lastTickTs,radiationLog,day:new Date().toDateString()}));}catch(e){}
 }
 function loadState(){
     try{
@@ -1238,6 +1242,7 @@ function loadState(){
             // that closed time at the current AC on/off + fridge/other rate instead
             // of silently dropping it — see update()'s elapsedH calculation.
             if(typeof s.lastTickTs==='number')_lastTickTs=s.lastTickTs;
+            if(Array.isArray(s.radiationLog))radiationLog=s.radiationLog;
             actualDailySolarKwh=typeof s.actualDailySolarKwh==='number'?s.actualDailySolarKwh:null;
             actualDailyImportKwh=typeof s.actualDailyImportKwh==='number'?s.actualDailyImportKwh:null;
             actualDailyUsageKwh=typeof s.actualDailyUsageKwh==='number'?s.actualDailyUsageKwh:null;
@@ -1417,7 +1422,7 @@ function checkDayRollover(){
     saveStats(_runningDay); // commit the finished day's final snapshot
     dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
-    _autoSavedDate=null;
+    _autoSavedDate=null; radiationLog=[];
     const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
     _runningDay=today;
     saveState();
@@ -1441,7 +1446,7 @@ function resetToday(){
     if(!confirm("Reset today's data?\n\nThis zeroes today's running counters and clears any manual solar/usage/import/export entries for today. History for previous days is kept."))return;
     dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
-    manualSolarW=null; manualSolarTime=null;
+    manualSolarW=null; manualSolarTime=null; radiationLog=[];
     const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
     // Drop today's snapshot from history so it rebuilds clean
     const today=new Date().toDateString();
@@ -1843,6 +1848,57 @@ function solar(){
     // No radiation data yet (or night / zero) → no output
     return 0;
 }
+function radiationToSol(r){ return (r!=null&&r>0)?Math.round(r*MAX_SOLAR/1000*0.88):0; }
+
+// Append a radiation sample every ~15 min so a later closed-app gap can be
+// reconstructed instead of assumed flat — see estimateGapEnergy().
+const RADIATION_LOG_INTERVAL_MS=15*60*1000;
+function logRadiationSample(){
+    if(!knmiData||knmiData.radiation==null)return;
+    const last=radiationLog[radiationLog.length-1];
+    if(last&&Date.now()-last.ts<RADIATION_LOG_INTERVAL_MS)return;
+    radiationLog.push({ts:Date.now(),radiation:knmiData.radiation});
+    if(radiationLog.length>100)radiationLog.shift(); // sanity cap, ~24h at this rate
+}
+
+// Below this, a flat "current reading held for the gap" estimate is already
+// accurate (normal 1.2s ticks, or a brief throttle) — no need to touch the log.
+const GAP_HISTORY_THRESHOLD_MS=5*60*1000;
+// Reconstruct solar/import/export produced between fromTs and toTs. For a
+// short gap this is just the current reading held flat (same as before). For
+// a long gap — the app was closed for a while — a flat estimate using only
+// the reopen-time reading is wrong whenever sunlight actually changed during
+// the closed period (e.g. closed at noon, reopened after dark). Instead walk
+// the logged radiation samples that fall inside the gap and trapezoidally
+// integrate through them, so each part of the gap is billed at roughly the
+// sunlight that was actually present then. AC/fridge/other aren't logged
+// historically, so `currentHouse` is assumed constant across the gap — that
+// matches the existing "backfill at the current AC on/off rate" behavior.
+function estimateGapEnergy(fromTs,toTs,currentSol,currentHouse){
+    const hrs=(toTs-fromTs)/3600000;
+    if(hrs<=0)return{solar:0,imp:0,exp:0};
+    const flatNet=currentSol-currentHouse;
+    const flat={solar:currentSol/1000*hrs,imp:Math.max(0,-flatNet)/1000*hrs,exp:Math.max(0,flatNet)/1000*hrs};
+    if((toTs-fromTs)<GAP_HISTORY_THRESHOLD_MS||manualSolarW!==null||!radiationLog.length)return flat;
+    const pts=radiationLog.filter(p=>p.ts<=toTs).map(p=>({ts:p.ts,sol:radiationToSol(p.radiation)}));
+    pts.push({ts:toTs,sol:currentSol}); // anchor the final segment to the live reading
+    let carrySol=currentSol;
+    for(const p of pts){ if(p.ts<=fromTs)carrySol=p.sol; } // last known reading before the gap started
+    let cursor=fromTs,cursorSol=carrySol,solar=0,imp=0,exp=0;
+    for(const p of pts){
+        if(p.ts<=fromTs)continue;
+        const segEnd=Math.min(p.ts,toTs),segHrs=(segEnd-cursor)/3600000;
+        if(segHrs>0){
+            const segSol=(cursorSol+p.sol)/2,segNet=segSol-currentHouse; // trapezoidal average
+            solar+=segSol/1000*segHrs;
+            imp+=Math.max(0,-segNet)/1000*segHrs;
+            exp+=Math.max(0,segNet)/1000*segHrs;
+        }
+        cursor=segEnd; cursorSol=p.sol;
+        if(cursor>=toTs)break;
+    }
+    return{solar,imp,exp};
+}
 function acPower(ind,out){
     if(!acMode)return 8;
     const p=AC_PROFILES[setpoint];
@@ -1893,15 +1949,18 @@ function update(){
     // "elapsed" time, which would otherwise subtract energy instead of adding
     // it; the upper bound is just a sanity ceiling (same-day gaps, which is
     // all loadState restores _lastTickTs for, can never exceed 24h anyway).
-    const elapsedH=_lastTickTs!=null?Math.max(0,Math.min(86400000,now-_lastTickTs))/3600000:1.2/3600;
+    const gapMs=Math.max(0,Math.min(86400000,_lastTickTs!=null?now-_lastTickTs:1200));
+    const elapsedH=gapMs/3600000, fromTs=now-gapMs;
     _lastTickTs=now;
     const out=outdoorFeelsLike(),sol=solar(),ac=acPower(indoor,out);
     const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
     updateIndoor(out,ac);
     const house=ac+fridge.w+other,net=sol-house;
     const impW=Math.max(0,-net),expW=Math.max(0,net);
-    dailySolarKwh+=sol/1000*elapsedH; dailyAcKwh+=ac/1000*elapsedH;
-    dailyImportKwh+=impW/1000*elapsedH; dailyExportKwh+=expW/1000*elapsedH;
+    logRadiationSample();
+    const gapEnergy=estimateGapEnergy(fromTs,now,sol,house);
+    dailySolarKwh+=gapEnergy.solar; dailyImportKwh+=gapEnergy.imp; dailyExportKwh+=gapEnergy.exp;
+    dailyAcKwh+=ac/1000*elapsedH; // AC's own draw isn't weather-dependent, so a flat rate is fine
 
     // Cost projections (for monthly estimate) + running actual cost
     const acDayEst=acMode?AC_PROFILES[setpoint].dailyKwh:0.2;
