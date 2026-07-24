@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v102-solar-history';
-// Force update: closed-app solar/import/export now reconstructed from a logged radiation history
+const CACHE = 'powerdash-v103-proj-fonts';
+// Force update: Projected Full Day tile fonts doubled in size
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
