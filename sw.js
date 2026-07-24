@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v101-layout';
-// Force update: removed redundant load cards, closed-app usage backfill, bigger small text
+const CACHE = 'powerdash-v102-solar-history';
+// Force update: closed-app solar/import/export now reconstructed from a logged radiation history
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
