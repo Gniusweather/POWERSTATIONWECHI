@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v104-compact-wx';
-// Force update: compacted the Bonaire weather card, bigger Projected Full Day fonts
+const CACHE = 'powerdash-v105-unify-cost';
+// Force update: Today's Cost and 30-Day Projection now derive from the same Projected Full Day estimate
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────

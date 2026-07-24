@@ -1757,8 +1757,18 @@ function renderStatsToday(){
         const dCost=cost-yest.cost_xcg;
         document.getElementById("stTodayCostVsYest").innerHTML=(dCost<=0?'<span class="text-emerald-400">↓ -':'<span class="text-red-400">↑ +')+Math.abs(dCost).toFixed(2)+" XCG</span> vs yesterday";
     }
-    // Projected full day — uses AC profile daily estimate for usage, KNMI solar for full-day PV
-    // Prefer bill-calibrated values if available
+}
+
+// Full-day projection — uses AC profile daily estimate for usage, KNMI solar
+// for full-day PV, and prefers bill-calibrated or manually-entered values
+// when available. This is the single source of truth for "today's cost":
+// the Projected Full Day card, Today's Cost, and the 30-Day Projection all
+// read from it, instead of each keeping its own separate estimate. Runs
+// every tick regardless of which stats tab is open, since the Projected
+// Full Day card lives in the main grid, not inside the stats section.
+function computeDayProjection(){
+    const todayStr=new Date().toDateString();
+    const todayBill=findBillForDate(todayStr);
     const projSol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
         :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
@@ -1766,7 +1776,7 @@ function renderStatsToday(){
         :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg
         :((acMode?AC_PROFILES[setpoint].dailyKwh:0.2)+FRIDGE_DAILY+OTHER_DAILY));
     const projImp=actualDailyImportKwh!==null?actualDailyImportKwh:Math.max(0,projUsage-projSol);
-    const projExp=Math.max(0,projSol-projUsage);
+    const projExp=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,projSol-projUsage);
     const projCostVal=projImp*RATE-projExp*EXPORT_RATE;
     const projSS=projUsage>0?Math.min(100,Math.round((projUsage-projImp)/projUsage*100)):100;
     document.getElementById("projSolar").innerText=projSol.toFixed(1)+" kWh";
@@ -1776,6 +1786,7 @@ function renderStatsToday(){
     document.getElementById("projCost").innerText=projCostVal.toFixed(2);
     document.getElementById("projSelfSuf").innerText=projSS+"%";
     document.getElementById("projAcTag").innerText=acMode?"AC ON "+setpoint+"°C":"AC OFF";
+    return{projSol,projUsage,projImp,projExp,projCostVal,projSS};
 }
 
 const CHART_SCALE_KWH=10; // fixed y-axis ceiling so daily bars are comparable
@@ -1962,14 +1973,6 @@ function update(){
     dailySolarKwh+=gapEnergy.solar; dailyImportKwh+=gapEnergy.imp; dailyExportKwh+=gapEnergy.exp;
     dailyAcKwh+=ac/1000*elapsedH; // AC's own draw isn't weather-dependent, so a flat rate is fine
 
-    // Cost projections (for monthly estimate) + running actual cost
-    const acDayEst=acMode?AC_PROFILES[setpoint].dailyKwh:0.2;
-    const solEst=Math.max(dailySolarKwh,3.5);
-    const netDay=acDayEst+FRIDGE_DAILY+OTHER_DAILY-solEst;
-    const dailyCost=netDay*RATE; // projection only (used for 30-day estimate)
-    const worstDay=(AC_PROFILES[26].dailyKwh+FRIDGE_DAILY+OTHER_DAILY-solEst)*RATE;
-    const runningCost=dailyImportKwh*RATE-dailyExportKwh*EXPORT_RATE; // actual running cost
-
     // Solar
     document.getElementById("solar").innerText=sol+" W";
     document.getElementById("dailySolar").innerText=dailySolarKwh.toFixed(1)+" kWh";
@@ -2013,11 +2016,19 @@ function update(){
     // Power flow
     updateFlowCard(sol,house,net);
 
+    // Full-day projection — always refreshed here (see computeDayProjection),
+    // then reused below so Today's Cost and the 30-Day Projection agree with
+    // the Projected Full Day card instead of each computing their own figure.
+    const proj=computeDayProjection();
+
     // Cost
-    document.getElementById("daily").innerText=runningCost.toFixed(2)+" XCG";
-    document.getElementById("monthly").innerText=(dailyCost*30).toFixed(1)+" XCG";
-    document.getElementById("savings").innerText=Math.max(0,(worstDay-dailyCost)*30).toFixed(0)+" XCG saved";
-    document.getElementById("dailyTrend").innerHTML=runningCost<=0
+    document.getElementById("daily").innerText=proj.projCostVal.toFixed(2)+" XCG";
+    document.getElementById("monthly").innerText=(proj.projCostVal*30).toFixed(1)+" XCG";
+    const worstDayUsage=AC_PROFILES[26].dailyKwh+FRIDGE_DAILY+OTHER_DAILY;
+    const worstDayImp=Math.max(0,worstDayUsage-proj.projSol),worstDayExp=Math.max(0,proj.projSol-worstDayUsage);
+    const worstDayCost=worstDayImp*RATE-worstDayExp*EXPORT_RATE;
+    document.getElementById("savings").innerText=Math.max(0,(worstDayCost-proj.projCostVal)*30).toFixed(0)+" XCG saved";
+    document.getElementById("dailyTrend").innerHTML=proj.projCostVal<=0
         ?`<i class="fas fa-arrow-down mr-1"></i>EARNING FROM SOLAR`
         :`<i class="fas fa-bolt mr-1"></i>${acMode?"AC AT "+setpoint+"°C":"AC OFF — LOWEST COST"}`;
 
