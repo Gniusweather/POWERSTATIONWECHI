@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v99-update';
-// Force update: Projected full day card moved above Energy Statistics section
+const CACHE = 'powerdash-v101-layout';
+// Force update: removed redundant load cards, closed-app usage backfill, bigger small text
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
