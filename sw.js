@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v103-proj-fonts';
-// Force update: Projected Full Day tile fonts doubled in size
+const CACHE = 'powerdash-v104-compact-wx';
+// Force update: compacted the Bonaire weather card, bigger Projected Full Day fonts
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────

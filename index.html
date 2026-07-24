@@ -412,13 +412,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
             <!-- WEATHER (1 col - smaller) -->
-            <div class="card rounded-2xl p-3 card-accent-sky">
-                <div class="flex items-start justify-between mb-2">
-                    <div class="flex items-center gap-2">
-                        <div id="wxIcon" class="text-2xl leading-none" style="filter:drop-shadow(0 0 14px rgba(250,200,30,0.55))">⛅</div>
+            <div class="card rounded-2xl p-2 card-accent-sky">
+                <div class="flex items-start justify-between mb-1">
+                    <div class="flex items-center gap-1.5">
+                        <div id="wxIcon" class="text-xl leading-none" style="filter:drop-shadow(0 0 14px rgba(250,200,30,0.55))">⛅</div>
                         <div>
-                            <div class="text-[13px] font-bold">Bonaire</div>
-                            <div id="wxCondition" class="text-[11px] text-sky-400 tracking-widest uppercase mt-0.5">—</div>
+                            <div class="text-[13px] font-bold leading-tight">Bonaire</div>
+                            <div id="wxCondition" class="text-[11px] text-sky-400 tracking-widest uppercase leading-tight">—</div>
                         </div>
                     </div>
                     <div class="text-right">
@@ -427,45 +427,45 @@
                 </div>
 
                 <!-- Hero row -->
-                <div class="flex items-end gap-3 mb-3">
+                <div class="flex items-end gap-2 mb-2">
                     <div>
-                        <div id="wxFeels" class="text-3xl font-bold text-white">—°</div>
-                        <div class="text-[11px] text-white/35 tracking-wider mt-0.5">FEELS</div>
+                        <div id="wxFeels" class="text-2xl font-bold text-white leading-none">—°</div>
+                        <div class="text-[11px] text-white/35 tracking-wider">FEELS</div>
                     </div>
-                    <div class="mb-1 space-y-1">
+                    <div class="space-y-0.5">
                         <div class="flex items-baseline gap-1">
-                            <span id="wxAir" class="text-lg font-bold text-white/75 tabular-nums">—</span>
+                            <span id="wxAir" class="text-sm font-bold text-white/75 tabular-nums">—</span>
                             <span class="text-[11px] text-white/35">°C</span>
                         </div>
                         <div class="flex items-baseline gap-1">
-                            <span id="wxDew" class="text-sm font-semibold text-sky-300 tabular-nums">—</span>
+                            <span id="wxDew" class="text-[13px] font-semibold text-sky-300 tabular-nums">—</span>
                             <span class="text-[11px] text-white/35">dew</span>
                         </div>
                         <div class="flex items-baseline gap-1">
-                            <span id="wxRh" class="text-sm font-semibold text-sky-200 tabular-nums">—</span>
+                            <span id="wxRh" class="text-[13px] font-semibold text-sky-200 tabular-nums">—</span>
                             <span class="text-[11px] text-white/35">rh%</span>
                         </div>
                         <div class="flex items-baseline gap-1">
-                            <span id="wxCloud" class="text-sm font-semibold text-white/55 tabular-nums">—</span>
+                            <span id="wxCloud" class="text-[13px] font-semibold text-white/55 tabular-nums">—</span>
                             <span class="text-[11px] text-white/35">okta</span>
                         </div>
                     </div>
-                    <div class="ml-auto text-right mb-1">
+                    <div class="ml-auto text-right">
                         <div class="flex items-center justify-end gap-1">
-                            <span id="wxPressureTrend" class="text-lg font-bold text-purple-300"></span>
+                            <span id="wxPressureTrend" class="text-sm font-bold text-purple-300"></span>
                             <span id="wxPressure" class="text-[13px] font-semibold text-purple-300">— hPa</span>
                         </div>
-                        <div id="wxPressureHint" class="text-[12px] text-white/25 mt-0.5">pressure</div>
+                        <div id="wxPressureHint" class="text-[12px] text-white/25">pressure</div>
                     </div>
                 </div>
 
                 <!-- Wind / Rain -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
 
                     <!-- Wind -->
-                    <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
+                    <div class="bg-white/[0.04] rounded-xl p-2 flex flex-col items-center gap-1 border border-white/[0.06]">
                         <div class="text-[12px] text-white/35 tracking-widest">WIND</div>
-                        <svg viewBox="-44 -44 88 88" width="76" height="76">
+                        <svg viewBox="-44 -44 88 88" width="60" height="60">
                             <circle r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
                             <line x1="0" y1="-42" x2="0" y2="-35" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
                             <line x1="0" y1="42" x2="0" y2="35" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
@@ -482,20 +482,20 @@
                             <circle r="3.5" fill="white" fill-opacity="0.9"/>
                         </svg>
                         <div class="text-center leading-tight">
-                            <div id="wxWindKt" class="text-[17px] font-bold text-sky-300 tabular-nums" style="text-shadow:0 0 16px rgba(125,211,252,0.65)">— kt</div>
+                            <div id="wxWindKt" class="text-[15px] font-bold text-sky-300 tabular-nums" style="text-shadow:0 0 16px rgba(125,211,252,0.65)">— kt</div>
                             <div id="wxWindDir" class="text-xs text-white/45">—</div>
-                            <div id="wxGustKt" class="text-[12px] text-white/30 mt-0.5">gust — kt</div>
+                            <div id="wxGustKt" class="text-[12px] text-white/30">gust — kt</div>
                         </div>
                     </div>
 
                     <!-- Rain -->
-                    <div class="bg-white/[0.04] rounded-2xl p-3 flex flex-col items-center gap-2 border border-white/[0.06]">
+                    <div class="bg-white/[0.04] rounded-xl p-2 flex flex-col items-center gap-1 border border-white/[0.06]">
                         <div class="text-[12px] text-white/35 tracking-widest">RAIN</div>
-                        <div class="rain-wrap w-full" id="rainWrap"></div>
-                        <div class="text-center leading-tight mt-1">
-                            <div id="wxPrecip" class="text-[17px] font-bold text-blue-300 tabular-nums">—</div>
+                        <div class="rain-wrap w-full" id="rainWrap" style="height:40px"></div>
+                        <div class="text-center leading-tight">
+                            <div id="wxPrecip" class="text-[15px] font-bold text-blue-300 tabular-nums">—</div>
                             <div class="text-[12px] text-white/30" id="wxPrecipPeriod">per 10 min</div>
-                            <div id="wxRainStatus" class="text-xs text-white/45 mt-0.5">—</div>
+                            <div id="wxRainStatus" class="text-xs text-white/45">—</div>
                         </div>
                     </div>
 
@@ -536,30 +536,30 @@
 
             <!-- ═══ PROJECTED FULL DAY ═══ -->
             <div class="card rounded-2xl p-3 card-accent-purple lg:col-span-2">
-                <div class="text-[12px] text-purple-300/70 tracking-widest mb-2 flex items-center gap-1.5">
-                    <i class="fas fa-wand-magic-sparkles text-[11px]"></i>
+                <div class="text-[14px] text-purple-300/70 tracking-widest mb-2 flex items-center gap-1.5">
+                    <i class="fas fa-wand-magic-sparkles text-[13px]"></i>
                     PROJECTED FULL DAY
-                    <span id="projAcTag" class="ml-auto text-[11px] text-white/25"></span>
+                    <span id="projAcTag" class="ml-auto text-[13px] text-white/25"></span>
                 </div>
                 <div class="grid grid-cols-4 gap-2 text-center">
                     <div>
-                        <div class="text-[22px] font-bold text-emerald-400 tabular-nums" id="projSolar">—</div>
-                        <div class="text-[22px] text-white/30 mt-0.5">Solar</div>
+                        <div class="text-[28px] font-bold text-emerald-400 tabular-nums" id="projSolar">—</div>
+                        <div class="text-[16px] text-white/30 mt-0.5">Solar</div>
                     </div>
                     <div>
-                        <div class="text-[22px] font-bold text-orange-400 tabular-nums" id="projUsage">—</div>
-                        <div class="text-[22px] text-white/30 mt-0.5">Usage</div>
+                        <div class="text-[28px] font-bold text-orange-400 tabular-nums" id="projUsage">—</div>
+                        <div class="text-[16px] text-white/30 mt-0.5">Usage</div>
                     </div>
                     <div>
-                        <div class="text-[22px] font-bold text-red-400 tabular-nums" id="projImport">—</div>
-                        <div class="text-[22px] text-white/30 mt-0.5">Import</div>
+                        <div class="text-[28px] font-bold text-red-400 tabular-nums" id="projImport">—</div>
+                        <div class="text-[16px] text-white/30 mt-0.5">Import</div>
                     </div>
                     <div>
-                        <div class="text-[22px] font-bold text-emerald-300 tabular-nums" id="projExport">—</div>
-                        <div class="text-[22px] text-white/30 mt-0.5">Export</div>
+                        <div class="text-[28px] font-bold text-emerald-300 tabular-nums" id="projExport">—</div>
+                        <div class="text-[16px] text-white/30 mt-0.5">Export</div>
                     </div>
                 </div>
-                <div class="mt-2 text-center text-[12px] text-white/30">
+                <div class="mt-2 text-center text-[15px] text-white/30">
                     Cost ~<span id="projCost" class="text-yellow-400 font-semibold">—</span> XCG
                     <span class="mx-1.5 text-white/15">·</span>
                     <span id="projSelfSuf" class="text-emerald-400 font-semibold">—</span> self-sufficient
