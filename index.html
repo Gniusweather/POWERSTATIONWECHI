@@ -717,30 +717,6 @@
                 </div>
             </div>
 
-            <!-- GRID (2 cols) -->
-            <div class="card rounded-3xl p-4 lg:col-span-2" id="gridCard">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl">🔌</div>
-                        <div>
-                            <div class="text-[15px] font-bold">Grid Net</div>
-                            <div id="status" class="text-[11px] font-medium mt-0.5">—</div>
-                        </div>
-                    </div>
-                    <div id="grid" class="text-4xl font-bold text-emerald-400 tabular-nums">0 W</div>
-                </div>
-                <div class="flex gap-3 mt-4">
-                    <div class="flex-1 rounded-2xl py-4 text-center" style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.15)">
-                        <div class="text-[11px] text-emerald-400 tracking-widest mb-1" aria-label="Exporting to grid">↑ EXPORT</div>
-                        <div id="export" class="text-2xl font-bold text-emerald-400 tabular-nums" aria-live="polite">0 W</div>
-                    </div>
-                    <div class="flex-1 rounded-2xl py-4 text-center" style="background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.15)">
-                        <div class="text-[11px] text-red-400 tracking-widest mb-1" aria-label="Importing from grid">↓ IMPORT</div>
-                        <div id="import" class="text-2xl font-bold text-red-400 tabular-nums" aria-live="polite">0 W</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- DAILY COST -->
             <div class="card rounded-3xl p-4 card-accent-yellow">
                 <div class="flex items-center gap-3 mb-3">
@@ -1967,7 +1943,6 @@ function update(){
     const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
     updateIndoor(out,ac);
     const house=ac+fridge.w+other,net=sol-house;
-    const impW=Math.max(0,-net),expW=Math.max(0,net);
     logRadiationSample();
     const gapEnergy=estimateGapEnergy(fromTs,now,sol,house);
     dailySolarKwh+=gapEnergy.solar; dailyImportKwh+=gapEnergy.imp; dailyExportKwh+=gapEnergy.exp;
@@ -1993,20 +1968,6 @@ function update(){
     document.getElementById("bdAcBar").style.width=Math.round(ac/house*100)+"%";
     document.getElementById("bdFridgeBar").style.width=Math.round(fridge.w/house*100)+"%";
     document.getElementById("bdOtherBar").style.width=Math.round(other/house*100)+"%";
-
-    // Grid
-    const gEl=document.getElementById("grid");
-    gEl.innerText=(net>=0?"+":"")+net+" W";
-    gEl.className="text-4xl font-bold tabular-nums "+(net>=0?"text-emerald-400":"text-red-400");
-    document.getElementById("status").innerHTML=net>0
-        ?`<span class="text-emerald-400">↑ EXPORTING</span> <span class="font-mono text-white/50">+${expW} W</span>`
-        :`<span class="text-red-400">↓ IMPORTING</span> <span class="font-mono text-white/50">${impW} W</span>`;
-    document.getElementById("export").innerText=expW+" W";
-    document.getElementById("import").innerText=impW+" W";
-    const gc=document.getElementById("gridCard");
-    gc.className=gc.className.replace(/card-glow-\w+/g,"").trim();
-    gc.classList.add(net>=0?"card-glow-green":"card-glow-red");
-    if(net>=0)gc.classList.add("card-accent-green"); else gc.classList.remove("card-accent-green");
 
     // Solar card glow
     const sc=document.getElementById("solarCard");
