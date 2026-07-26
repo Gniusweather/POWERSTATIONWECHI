@@ -1745,12 +1745,26 @@ function renderStatsToday(){
 function computeDayProjection(){
     const todayStr=new Date().toDateString();
     const todayBill=findBillForDate(todayStr);
+    const now=new Date();
+    const localHour=((now.getUTCHours()-4)+24)%24+now.getUTCMinutes()/60; // Curaçao/Bonaire is AST, UTC-4 year-round, no DST
+    // Once the sun is down for the day — evening, or a zero radiation reading
+    // past midday — no more solar is coming. Trust the real accumulated total
+    // instead of blending in the daytime fallback estimate below, which would
+    // otherwise overstate a cloudy day's solar once production is actually done.
+    const solarDoneForToday=localHour>=18||(knmiData&&knmiData.radiation!=null&&knmiData.radiation<=0&&localHour>=12);
     const projSol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
-        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
+        :(solarDoneForToday?dailySolarKwh
+        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5))));
+    // Usage: the AC drawn so far today (already correctly time-integrated by
+    // update()) plus an estimate for the hours still left in the day at
+    // whatever the AC is set to right now — on or off, and at what setpoint —
+    // instead of a flat full-day figure that ignored everything already run.
+    const remainingHours=Math.max(0,24-localHour);
+    const acHourlyRate=(acMode?AC_PROFILES[setpoint].dailyKwh:0.2)/24;
     const projUsage=actualDailyUsageKwh!==null?actualDailyUsageKwh
         :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg
-        :((acMode?AC_PROFILES[setpoint].dailyKwh:0.2)+FRIDGE_DAILY+OTHER_DAILY));
+        :(dailyAcKwh+acHourlyRate*remainingHours+FRIDGE_DAILY+OTHER_DAILY));
     const projImp=actualDailyImportKwh!==null?actualDailyImportKwh:Math.max(0,projUsage-projSol);
     const projExp=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,projSol-projUsage);
     const projCostVal=projImp*RATE-projExp*EXPORT_RATE;

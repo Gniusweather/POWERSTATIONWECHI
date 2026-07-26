@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v106-no-gridcard';
-// Force update: removed the redundant Grid Net tile
+const CACHE = 'powerdash-v107-evening-proj';
+// Force update: day projection now time-aware for evening/no-PV hours and reflects actual AC usage so far
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
