@@ -109,9 +109,6 @@
         /* ── SOLAR RING ── */
         #solarArc { transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.6s ease; }
 
-        /* ── HISTORY BARS ── */
-        .hist-bar { flex:1; border-radius:3px 3px 0 0; min-height:2px; transition:height 0.9s ease, background 0.5s ease; }
-
         /* ── POWER FLOW ── */
         .flow-node {
             display:flex; flex-direction:column; align-items:center;
@@ -602,9 +599,6 @@
                         <div class="text-xs text-white/40">today</div>
                     </div>
                 </div>
-
-                <!-- Sparkline -->
-                <div class="flex items-end gap-[2px] h-10 mb-4" id="solarHistBars"></div>
 
                 <!-- Manual override -->
                 <div class="bg-white/[0.04] rounded-2xl p-3 border border-white/[0.07]">
@@ -1191,7 +1185,6 @@ let actualDailyExportKwh=null; // user-entered actual export for stats
 let _autoSavedDate=null;       // tracks which day the 6pm auto-save already ran
 let _runningDay=new Date().toDateString(); // day the live counters belong to
 let knmiData=null, manualSolarW=null, manualSolarTime=null;
-let solarHistory=new Array(20).fill(0);
 // Sparse log of {ts,radiation} samples for today, used to reconstruct solar
 // output during a closed-app gap instead of assuming the reopen-time reading
 // applied for the whole gap. Reset at day rollover — see checkDayRollover().
@@ -1647,21 +1640,13 @@ function applyKnmiUI(d,src){
 }
 
 /* ═══════════════════════════════════════════════════════
-   SOLAR GAUGE + HISTORY
+   SOLAR GAUGE
 ═══════════════════════════════════════════════════════ */
-let histBars=[];
-function buildHistBars(){
-    const c=document.getElementById("solarHistBars");c.innerHTML="";histBars=[];
-    for(let i=0;i<20;i++){const b=document.createElement("div");b.className="hist-bar";b.style.height="2px";c.appendChild(b);histBars.push(b);}
-}
 function updateSolarGauge(sol){
     const pct=Math.min(100,Math.round(sol/MAX_SOLAR*100));
     document.getElementById("solarArc").style.strokeDashoffset=201*(1-pct/100);
     document.getElementById("solarArc").style.stroke=pct>70?"#34d399":pct>40?"#22d3ee":"#60a5fa";
     document.getElementById("solarPctLabel").innerText=pct+"%";
-    solarHistory.push(sol);solarHistory.shift();
-    const mx=Math.max(...solarHistory,1);
-    histBars.forEach((b,i)=>{const h=Math.max(2,solarHistory[i]/mx*100);b.style.height=h+"%";b.style.background=`rgba(52,211,153,${(0.2+solarHistory[i]/mx*0.65).toFixed(2)})`;});
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2360,7 +2345,6 @@ async function initialize(){
     document.getElementById("dailyImportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyImport();});
     document.getElementById("dailyExportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyExport();});
     setMode(acMode); setSetpoint(setpoint);
-    buildHistBars();
     updateClock(); setInterval(updateClock,1000);
     update(); setInterval(update,1200);
     initNotifBtn();
