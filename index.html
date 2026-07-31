@@ -1183,6 +1183,7 @@ function closeSettings(){ document.getElementById("settingsOverlay").classList.a
 ═══════════════════════════════════════════════════════ */
 let acMode=true, setpoint=26, indoor=26.0;
 let dailySolarKwh=0, dailyAcKwh=0, dailyImportKwh=0, dailyExportKwh=0;
+let dailyAcOffHours=0; // cumulative hours AC has been off today, for export-eligibility + projection
 let actualDailySolarKwh=null; // user-entered actual solar production for stats
 let actualDailyImportKwh=null; // user-entered actual import for stats
 let actualDailyUsageKwh=null;  // user-entered actual total usage for stats
@@ -1202,7 +1203,7 @@ let currentStatsTab='day';
    PERSISTENCE — APP STATE
 ═══════════════════════════════════════════════════════ */
 function saveState(){
-    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,lastTickTs:_lastTickTs,radiationLog,day:new Date().toDateString()}));}catch(e){}
+    try{localStorage.setItem("powerDash",JSON.stringify({acMode,setpoint,manualSolarW,manualSolarTime,dailySolarKwh,dailyAcKwh,dailyImportKwh,dailyExportKwh,dailyAcOffHours,actualDailySolarKwh,actualDailyImportKwh,actualDailyUsageKwh,actualDailyExportKwh,_autoSavedDate,lastTickTs:_lastTickTs,radiationLog,day:new Date().toDateString()}));}catch(e){}
 }
 function loadState(){
     try{
@@ -1213,6 +1214,7 @@ function loadState(){
             // Same day — restore running counters
             dailySolarKwh=s.dailySolarKwh||0;dailyAcKwh=s.dailyAcKwh||0;
             dailyImportKwh=s.dailyImportKwh||0;dailyExportKwh=s.dailyExportKwh||0;
+            dailyAcOffHours=s.dailyAcOffHours||0;
             // Restore the last-active timestamp so the first tick after reopening
             // (even hours later, with the app fully closed the whole time) bills
             // that closed time at the current AC on/off + fridge/other rate instead
@@ -1396,7 +1398,7 @@ function checkDayRollover(){
     const today=new Date().toDateString();
     if(_runningDay===today)return;
     saveStats(_runningDay); // commit the finished day's final snapshot
-    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
+    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0; dailyAcOffHours=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
     _autoSavedDate=null; radiationLog=[];
     const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
@@ -1420,7 +1422,7 @@ function exportStatsCSV(){
 }
 function resetToday(){
     if(!confirm("Reset today's data?\n\nThis zeroes today's running counters and clears any manual solar/usage/import/export entries for today. History for previous days is kept."))return;
-    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0;
+    dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0; dailyAcOffHours=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
     manualSolarW=null; manualSolarTime=null; radiationLog=[];
     const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
@@ -1481,9 +1483,13 @@ function updateExportAcOff(){
     // the figure is meaningful even early in the morning.
     const todayStr=new Date().toDateString();
     const todayBill=findBillForDate(todayStr);
+    const now=new Date();
+    const localHour=((now.getUTCHours()-4)+24)%24+now.getUTCMinutes()/60;
+    const solarDoneForToday=localHour>=18||(knmiData&&knmiData.radiation!=null&&knmiData.radiation<=0&&localHour>=12);
     const fullDaySol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
-        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
+        :(solarDoneForToday?dailySolarKwh
+        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5))));
     const expNoAc=Math.max(0,fullDaySol-(FRIDGE_DAILY+OTHER_DAILY));
     const el=document.getElementById("exportIfAcOff");
     if(el)el.innerText=`If AC off all day: ~${expNoAc.toFixed(1)} kWh export (full-day est.)`;
@@ -1715,7 +1721,8 @@ function renderStatsToday(){
     // Usage: prefer manual entry, then bill-calibrated average, then live
     const totDisplay=actualDailyUsageKwh!==null?actualDailyUsageKwh
         :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg:(dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY));
-    const expDisplay=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,solDisplay-totDisplay+impDisplay);
+    // Export: prefer manual entry, then live (already gated to AC-off periods)
+    const expDisplay=actualDailyExportKwh!==null?actualDailyExportKwh:dailyExportKwh;
     const cost=+(impDisplay*RATE-expDisplay*EXPORT_RATE);
     document.getElementById("stTodaySolar").innerText=solDisplay.toFixed(1)+" kWh"+(actualDailySolarKwh!==null?' ✓':'')+(todayBill&&todayBill.dailySolarAvg!=null&&actualDailySolarKwh==null?' ✓':'');
     document.getElementById("stTodayCost").innerText=cost.toFixed(2)+" XCG";
@@ -1745,14 +1752,36 @@ function renderStatsToday(){
 function computeDayProjection(){
     const todayStr=new Date().toDateString();
     const todayBill=findBillForDate(todayStr);
+    const now=new Date();
+    const localHour=((now.getUTCHours()-4)+24)%24+now.getUTCMinutes()/60; // Curaçao/Bonaire is AST, UTC-4 year-round, no DST
+    // Once the sun is down for the day — evening, or a zero radiation reading
+    // past midday — no more solar is coming. Trust the real accumulated total
+    // instead of blending in the daytime fallback estimate below, which would
+    // otherwise overstate a cloudy day's solar once production is actually done.
+    const solarDoneForToday=localHour>=18||(knmiData&&knmiData.radiation!=null&&knmiData.radiation<=0&&localHour>=12);
     const projSol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
-        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5)));
+        :(solarDoneForToday?dailySolarKwh
+        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5))));
+    // Usage: the AC drawn so far today (already correctly time-integrated by
+    // update()) plus an estimate for the hours still left in the day at
+    // whatever the AC is set to right now — on or off, and at what setpoint —
+    // instead of a flat full-day figure that ignored everything already run.
+    const remainingHours=Math.max(0,24-localHour);
+    const acHourlyRate=(acMode?AC_PROFILES[setpoint].dailyKwh:0.2)/24;
     const projUsage=actualDailyUsageKwh!==null?actualDailyUsageKwh
         :(todayBill&&todayBill.dailyUsageAvg!=null?todayBill.dailyUsageAvg
-        :((acMode?AC_PROFILES[setpoint].dailyKwh:0.2)+FRIDGE_DAILY+OTHER_DAILY));
-    const projImp=actualDailyImportKwh!==null?actualDailyImportKwh:Math.max(0,projUsage-projSol);
-    const projExp=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,projSol-projUsage);
+        :(dailyAcKwh+acHourlyRate*remainingHours+FRIDGE_DAILY+OTHER_DAILY));
+    // Import/export: the real accumulated totals (dailyImportKwh/dailyExportKwh
+    // — already correctly gated to export-only-while-AC-off, tick by tick) plus
+    // a forward estimate for the remaining hours that applies the same rule:
+    // any solar surplus over the house load is only exportable while the AC
+    // is currently off, otherwise it's curtailed and contributes to neither.
+    const solRemaining=Math.max(0,projSol-dailySolarKwh);
+    const houseRemaining=(acHourlyRate+(FRIDGE_DAILY+OTHER_DAILY)/24)*remainingHours;
+    const netRemaining=acMode?Math.min(0,solRemaining-houseRemaining):(solRemaining-houseRemaining);
+    const projImp=actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh+Math.max(0,-netRemaining);
+    const projExp=actualDailyExportKwh!==null?actualDailyExportKwh:dailyExportKwh+Math.max(0,netRemaining);
     const projCostVal=projImp*RATE-projExp*EXPORT_RATE;
     const projSS=projUsage>0?Math.min(100,Math.round((projUsage-projImp)/projUsage*100)):100;
     document.getElementById("projSolar").innerText=projSol.toFixed(1)+" kWh";
@@ -1761,7 +1790,8 @@ function computeDayProjection(){
     document.getElementById("projExport").innerText=projExp.toFixed(1)+" kWh";
     document.getElementById("projCost").innerText=projCostVal.toFixed(2);
     document.getElementById("projSelfSuf").innerText=projSS+"%";
-    document.getElementById("projAcTag").innerText=acMode?"AC ON "+setpoint+"°C":"AC OFF";
+    const offHoursTxt=dailyAcOffHours>=0.05?` · off ${dailyAcOffHours.toFixed(1)}h`:'';
+    document.getElementById("projAcTag").innerText=(acMode?"AC ON "+setpoint+"°C":"AC OFF")+offHoursTxt;
     return{projSol,projUsage,projImp,projExp,projCostVal,projSS};
 }
 
@@ -1859,13 +1889,17 @@ const GAP_HISTORY_THRESHOLD_MS=5*60*1000;
 // the logged radiation samples that fall inside the gap and trapezoidally
 // integrate through them, so each part of the gap is billed at roughly the
 // sunlight that was actually present then. AC/fridge/other aren't logged
-// historically, so `currentHouse` is assumed constant across the gap — that
-// matches the existing "backfill at the current AC on/off rate" behavior.
-function estimateGapEnergy(fromTs,toTs,currentSol,currentHouse){
+// historically, so `currentHouse`/`acOn` are assumed constant across the gap
+// — that matches the existing "backfill at the current AC on/off rate"
+// behavior. `acOn` gates export: this installation only sends surplus solar
+// to the grid while the AC is off — while it's on, solar beyond the house
+// load is curtailed rather than exported (production itself is unaffected).
+function estimateGapEnergy(fromTs,toTs,currentSol,currentHouse,acOn){
     const hrs=(toTs-fromTs)/3600000;
     if(hrs<=0)return{solar:0,imp:0,exp:0};
     const flatNet=currentSol-currentHouse;
-    const flat={solar:currentSol/1000*hrs,imp:Math.max(0,-flatNet)/1000*hrs,exp:Math.max(0,flatNet)/1000*hrs};
+    const flatExpNet=acOn?Math.min(0,flatNet):flatNet;
+    const flat={solar:currentSol/1000*hrs,imp:Math.max(0,-flatExpNet)/1000*hrs,exp:Math.max(0,flatExpNet)/1000*hrs};
     if((toTs-fromTs)<GAP_HISTORY_THRESHOLD_MS||manualSolarW!==null||!radiationLog.length)return flat;
     const pts=radiationLog.filter(p=>p.ts<=toTs).map(p=>({ts:p.ts,sol:radiationToSol(p.radiation)}));
     pts.push({ts:toTs,sol:currentSol}); // anchor the final segment to the live reading
@@ -1876,7 +1910,9 @@ function estimateGapEnergy(fromTs,toTs,currentSol,currentHouse){
         if(p.ts<=fromTs)continue;
         const segEnd=Math.min(p.ts,toTs),segHrs=(segEnd-cursor)/3600000;
         if(segHrs>0){
-            const segSol=(cursorSol+p.sol)/2,segNet=segSol-currentHouse; // trapezoidal average
+            const segSol=(cursorSol+p.sol)/2; // trapezoidal average
+            let segNet=segSol-currentHouse;
+            if(acOn)segNet=Math.min(0,segNet); // no export while AC is on
             solar+=segSol/1000*segHrs;
             imp+=Math.max(0,-segNet)/1000*segHrs;
             exp+=Math.max(0,segNet)/1000*segHrs;
@@ -1942,11 +1978,16 @@ function update(){
     const out=outdoorFeelsLike(),sol=solar(),ac=acPower(indoor,out);
     const fridge=fridgePower(),other=OTHER_BASE_W+Math.floor(Math.random()*10);
     updateIndoor(out,ac);
-    const house=ac+fridge.w+other,net=sol-house;
+    const house=ac+fridge.w+other,rawNet=sol-house;
+    // This installation only exports surplus solar to the grid while the AC
+    // is off — with the AC on, any solar beyond the house load is curtailed
+    // rather than sent out, so the live/net figures never show an export.
+    const net=acMode?Math.min(0,rawNet):rawNet;
     logRadiationSample();
-    const gapEnergy=estimateGapEnergy(fromTs,now,sol,house);
+    const gapEnergy=estimateGapEnergy(fromTs,now,sol,house,acMode);
     dailySolarKwh+=gapEnergy.solar; dailyImportKwh+=gapEnergy.imp; dailyExportKwh+=gapEnergy.exp;
     dailyAcKwh+=ac/1000*elapsedH; // AC's own draw isn't weather-dependent, so a flat rate is fine
+    if(!acMode)dailyAcOffHours+=elapsedH;
 
     // Solar
     document.getElementById("solar").innerText=sol+" W";

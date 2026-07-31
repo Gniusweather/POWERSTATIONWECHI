@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v106-no-gridcard';
-// Force update: removed the redundant Grid Net tile
+const CACHE = 'powerdash-v108-export-gate';
+// Force update: grid export only counted while AC is off, with AC-off hours tracked and fed into the projection
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
