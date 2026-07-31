@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v109-no-bar-anim';
-// Force update: removed the solar PV sparkline bars' height/color animation
+const CACHE = 'powerdash-v110-no-bars';
+// Force update: removed the solar PV sparkline bars entirely
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
