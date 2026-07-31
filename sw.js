@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v108-export-gate';
-// Force update: grid export only counted while AC is off, with AC-off hours tracked and fed into the projection
+const CACHE = 'powerdash-v109-no-bar-anim';
+// Force update: removed the solar PV sparkline bars' height/color animation
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
