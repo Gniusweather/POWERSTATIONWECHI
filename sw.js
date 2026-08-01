@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v110-no-bars';
-// Force update: removed the solar PV sparkline bars entirely
+const CACHE = 'powerdash-v111-recalibrate';
+// Force update: recalibrated solar and AC-usage estimates against real-world numbers
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
