@@ -1110,8 +1110,12 @@ function knmiToNormalized(p){
 const FRIDGE_IDLE_W=45, FRIDGE_DUTY=0.35, OTHER_BASE_W=42;
 // Reference AC model at a rated peak of 1280 W. Real units are scaled from
 // these ratios using the user's configured AC peak power (MAX_AC).
+// Calibrated from real-world feedback: total daily usage (AC + fridge +
+// other) with AC running all day at 26°C measured ~12 kWh, vs. the ~10.4 kWh
+// the old reference implied — scaled the whole curve up ~1.22x to match,
+// preserving the relative gap between setpoints.
 const AC_REF_PEAK=1280;
-const AC_REF={26:{base:560,dailyKwh:7.4},27:{base:480,dailyKwh:6.1},28:{base:420,dailyKwh:5.0}};
+const AC_REF={26:{base:680,dailyKwh:9.0},27:{base:585,dailyKwh:7.4},28:{base:510,dailyKwh:6.1}};
 
 // User-configurable (defaults below). Mutated by the Settings panel.
 let RATE=0.68;          // import price XCG/kWh
@@ -1482,7 +1486,7 @@ function updateExportAcOff(){
     const fullDaySol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
         :(solarDoneForToday?dailySolarKwh
-        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5))));
+        :Math.max(dailySolarKwh,estimateFullDaySolarKwh())));
     const expNoAc=Math.max(0,fullDaySol-(FRIDGE_DAILY+OTHER_DAILY));
     const el=document.getElementById("exportIfAcOff");
     if(el)el.innerText=`If AC off all day: ~${expNoAc.toFixed(1)} kWh export (full-day est.)`;
@@ -1747,7 +1751,7 @@ function computeDayProjection(){
     const projSol=actualDailySolarKwh!==null?actualDailySolarKwh
         :(todayBill&&todayBill.dailySolarAvg!=null?todayBill.dailySolarAvg
         :(solarDoneForToday?dailySolarKwh
-        :Math.max(dailySolarKwh,(knmiData&&knmiData.radiation>0?(knmiData.radiation*MAX_SOLAR/1000*0.88*5.5/1000):3.5))));
+        :Math.max(dailySolarKwh,estimateFullDaySolarKwh())));
     // Usage: the AC drawn so far today (already correctly time-integrated by
     // update()) plus an estimate for the hours still left in the day at
     // whatever the AC is set to right now — on or off, and at what setpoint —
@@ -1851,6 +1855,23 @@ function solar(){
     return 0;
 }
 function radiationToSol(r){ return (r!=null&&r>0)?Math.round(r*MAX_SOLAR/1000*0.88):0; }
+
+// Rough full-day solar estimate used by projections before enough of today's
+// real (tick-integrated) production has accumulated to trust on its own —
+// either a "peak reading x typical sun-hours" extrapolation, or a flat
+// fallback when there's no radiation reading at all. Calibrated from
+// real-world feedback: the old sun-hours (5.5) and fallback (3.5 kWh)
+// undershot an observed ~6 kWh day. If your panels are bigger than the
+// default 920W peak, also raise "Solar panel peak power" in Settings for a
+// more accurate *live* reading throughout the day — this estimate only fills
+// the gap until dailySolarKwh itself is large enough to speak for itself.
+const TYPICAL_SUN_HOURS=7;
+const FALLBACK_DAILY_SOLAR_KWH=6;
+function estimateFullDaySolarKwh(){
+    return knmiData&&knmiData.radiation>0
+        ?knmiData.radiation*MAX_SOLAR/1000*0.88*TYPICAL_SUN_HOURS/1000
+        :FALLBACK_DAILY_SOLAR_KWH;
+}
 
 // Append a radiation sample every ~15 min so a later closed-app gap can be
 // reconstructed instead of assumed flat — see estimateGapEnergy().
