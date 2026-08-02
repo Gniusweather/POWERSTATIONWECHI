@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v112-perf-cleanup';
-// Force update: cached DOM lookups, aborted losing weather-proxy requests, removed dead code
+const CACHE = 'powerdash-v113-merged-cost-tile';
+// Force update: merged Today's Cost and 30-Day Projection into one tile
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
