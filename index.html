@@ -982,7 +982,7 @@
                             class="px-3 py-2 rounded-xl bg-white/[0.06] text-xs font-semibold text-white/70 hover:bg-white/10 transition-all border border-white/10">
                         <i class="fas fa-keyboard mr-1.5"></i>Manual
                     </button>
-                    <button onclick="document.getElementById('billFile').click()" aria-label="Upload receipt photo"
+                    <button onclick="$('billFile').click()" aria-label="Upload receipt photo"
                             class="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-900 hover:opacity-90 transition-all"
                             style="background:linear-gradient(to right,#fbbf24,#f59e0b)">
                         <i class="fas fa-camera mr-1.5"></i>Upload receipt
@@ -1006,6 +1006,15 @@
 <div id="autoSaveToast">✓ Daily stats auto-saved at 6 PM</div>
 
 <script>
+// Memoizing getElementById: update() and its hot-path callees run every
+// 1.2s for as long as this dashboard is open (it's meant to stay on-screen
+// 24/7 via wake lock), doing 60+ DOM lookups per tick otherwise. None of
+// this app's id'd elements are ever removed and recreated — dynamic content
+// (bill rows, chart bars, rain drops) is always appended as unid'd children
+// of a stable, id'd container — so a cached reference never goes stale.
+const _elCache=Object.create(null);
+function $(id){ return _elCache[id]||(_elCache[id]=document.getElementById(id)); }
+
 /* ═══════════════════════════════════════════════════════
    KNMI BONAIRE SCRAPER
 ═══════════════════════════════════════════════════════ */
@@ -1039,18 +1048,22 @@ async function fetchKnmiPage(){
         u=>'https://r.jina.ai/'+u,
         u=>u
     ];
+    // Share one AbortController across the race: once any proxy wins (or all
+    // fail), abort the rest instead of leaving up to 4 requests to run to
+    // their own timeout in the background — this fires every 5 min plus on
+    // every foreground, so the waste adds up over a day.
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),2500);
     try{
         return await Promise.any(proxies.map(async w=>{
-            const c=new AbortController(),t=setTimeout(()=>c.abort(),2500);
-            try{
-                const r=await fetch(w(KNMI_URL),{signal:c.signal});clearTimeout(t);
-                if(!r.ok)throw new Error('!ok');
-                const x=await r.text();
-                if(!x||x.length<500)throw new Error('short');
-                return x;
-            }catch(e){clearTimeout(t);throw e;}
+            const r=await fetch(w(KNMI_URL),{signal:controller.signal});
+            if(!r.ok)throw new Error('!ok');
+            const x=await r.text();
+            if(!x||x.length<500)throw new Error('short');
+            return x;
         }));
     }catch(e){return null;}
+    finally{clearTimeout(timeout);controller.abort();}
 }
 
 // Open-Meteo: free, no API key, direct CORS, used as parallel fallback for Curaçao
@@ -1125,9 +1138,8 @@ let FRIDGE_RUN_W=150;   // fridge compressor running W
 let MAX_AC=1280;        // AC peak/rated power W
 
 // Derived — recomputed whenever settings change
-let PANEL_EFF, FRIDGE_DAILY, OTHER_DAILY, AC_PROFILES={};
+let FRIDGE_DAILY, OTHER_DAILY, AC_PROFILES={};
 function recomputeDerived(){
-    PANEL_EFF=MAX_SOLAR/1000*0.82;
     FRIDGE_DAILY=(FRIDGE_RUN_W*FRIDGE_DUTY+FRIDGE_IDLE_W*(1-FRIDGE_DUTY))*24/1000;
     OTHER_DAILY=OTHER_BASE_W*24/1000;
     // Scale the AC steady-state power and daily-kWh estimates to the user's unit
@@ -1147,34 +1159,34 @@ function loadSettings(){
         }
     }catch(e){}
     recomputeDerived();
-    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+    const rl=$("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
 }
 function saveSettings(){
-    RATE=Math.max(0,parseFloat(document.getElementById("setRate").value)||RATE);
-    EXPORT_RATE=Math.max(0,parseFloat(document.getElementById("setExport").value)||0);
-    MAX_SOLAR=Math.max(100,parseFloat(document.getElementById("setPeak").value)||MAX_SOLAR);
-    FRIDGE_RUN_W=Math.max(20,parseFloat(document.getElementById("setFridge").value)||FRIDGE_RUN_W);
-    MAX_AC=Math.max(300,parseFloat(document.getElementById("setAcPeak").value)||MAX_AC);
+    RATE=Math.max(0,parseFloat($("setRate").value)||RATE);
+    EXPORT_RATE=Math.max(0,parseFloat($("setExport").value)||0);
+    MAX_SOLAR=Math.max(100,parseFloat($("setPeak").value)||MAX_SOLAR);
+    FRIDGE_RUN_W=Math.max(20,parseFloat($("setFridge").value)||FRIDGE_RUN_W);
+    MAX_AC=Math.max(300,parseFloat($("setAcPeak").value)||MAX_AC);
     try{localStorage.setItem("powerSettings",JSON.stringify({RATE,EXPORT_RATE,MAX_SOLAR,FRIDGE_RUN_W,MAX_AC}));}catch(e){}
     recomputeDerived();
     // Refresh derived labels
-    const pl=document.getElementById("solarPeakLabel"); if(pl)pl.innerText=MAX_SOLAR+" W";
-    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+    const pl=$("solarPeakLabel"); if(pl)pl.innerText=MAX_SOLAR+" W";
+    const rl=$("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
     // Show save confirmation then close
-    const sv=document.getElementById("settingsSaved");
+    const sv=$("settingsSaved");
     if(sv){sv.classList.remove("hidden");setTimeout(()=>{sv.classList.add("hidden");closeSettings();},900);}
     else closeSettings();
     update();
 }
 function openSettings(){
-    document.getElementById("setRate").value=RATE;
-    document.getElementById("setExport").value=EXPORT_RATE;
-    document.getElementById("setPeak").value=MAX_SOLAR;
-    document.getElementById("setFridge").value=FRIDGE_RUN_W;
-    document.getElementById("setAcPeak").value=MAX_AC;
-    document.getElementById("settingsOverlay").classList.remove("hidden");
+    $("setRate").value=RATE;
+    $("setExport").value=EXPORT_RATE;
+    $("setPeak").value=MAX_SOLAR;
+    $("setFridge").value=FRIDGE_RUN_W;
+    $("setAcPeak").value=MAX_AC;
+    $("settingsOverlay").classList.remove("hidden");
 }
-function closeSettings(){ document.getElementById("settingsOverlay").classList.add("hidden"); }
+function closeSettings(){ $("settingsOverlay").classList.add("hidden"); }
 
 /* ═══════════════════════════════════════════════════════
    STATE
@@ -1253,8 +1265,8 @@ function generateInitialStats(){
     for(let i=29;i>=1;i--){
         const d=new Date(); d.setDate(d.getDate()-i);
         const cloud=Math.random();
-        const sol=+(3.5+(1-cloud)*3.0+Math.random()*0.5).toFixed(1);
-        const ac=+(4.5+Math.random()*2.5).toFixed(1);
+        const sol=+(4.0+(1-cloud)*3.5+Math.random()*0.5).toFixed(1); // averages ~6 kWh, matching the recalibrated fallback
+        const ac=+(6.0+Math.random()*2.5).toFixed(1); // averages ~7.25 kWh, in line with the recalibrated AC profile
         const total=ac+FRIDGE_DAILY+OTHER_DAILY;
         const net=total-sol;
         const imp=Math.max(0,net),exp=Math.max(0,-net);
@@ -1290,8 +1302,8 @@ function saveStats(dateStr){
 ═══════════════════════════════════════════════════════ */
 function updateClock(){
     const n=new Date();
-    document.getElementById("currentTime").innerText=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
-    document.getElementById("currentDate").innerText=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    $("currentTime").innerText=n.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    $("currentDate").innerText=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1299,38 +1311,38 @@ function updateClock(){
 ═══════════════════════════════════════════════════════ */
 function setMode(v){
     acMode=v;
-    document.getElementById("onBtn").classList.toggle("tab-active",v);
-    document.getElementById("offBtn").classList.toggle("tab-active",!v);
-    document.getElementById("tempPicker").style.opacity=v?"1":"0.35";
-    document.getElementById("tempPicker").style.pointerEvents=v?"auto":"none";
+    $("onBtn").classList.toggle("tab-active",v);
+    $("offBtn").classList.toggle("tab-active",!v);
+    $("tempPicker").style.opacity=v?"1":"0.35";
+    $("tempPicker").style.pointerEvents=v?"auto":"none";
     updateAcLabels();saveState();update();
 }
 function setSetpoint(t){
     setpoint=t;
-    [26,27,28].forEach(d=>document.getElementById("temp"+d).classList.toggle("temp-active",d===t));
+    [26,27,28].forEach(d=>$("temp"+d).classList.toggle("temp-active",d===t));
     updateAcLabels();saveState();update();
 }
 function updateAcLabels(){
-    document.getElementById("setpointLabel").innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";
+    $("setpointLabel").innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";
 }
 
 /* ═══════════════════════════════════════════════════════
    MANUAL SOLAR
 ═══════════════════════════════════════════════════════ */
 function applyManualSolar(){
-    const el=document.getElementById("solarManualInput"),v=parseFloat(el.value);
+    const el=$("solarManualInput"),v=parseFloat(el.value);
     if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
     manualSolarW=Math.round(v);manualSolarTime=Date.now();el.value="";saveState();update();
 }
 function clearManualSolar(){manualSolarW=null;manualSolarTime=null;saveState();update();}
 function setSolarDaily(){
-    const el=document.getElementById("solarDailyInput"),v=parseFloat(el.value);
+    const el=$("solarDailyInput"),v=parseFloat(el.value);
     if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
     actualDailySolarKwh=Math.round(v*10)/10;el.value="";saveState();updateSolarDaily();update();
 }
 function clearSolarDaily(){actualDailySolarKwh=null;saveState();updateSolarDaily();update();}
 function updateSolarDaily(){
-    const info=document.getElementById("solarDailyInfo");
+    const info=$("solarDailyInfo");
     if(actualDailySolarKwh!==null){
         info.innerText=`✓ Using actual: ${actualDailySolarKwh} kWh (calculated was ${dailySolarKwh.toFixed(1)} kWh)`;
     } else {
@@ -1338,16 +1350,16 @@ function updateSolarDaily(){
     }
 }
 function setDailyUsage(){
-    const el=document.getElementById("dailyUsageInput"),v=parseFloat(el.value);
+    const el=$("dailyUsageInput"),v=parseFloat(el.value);
     if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
     actualDailyUsageKwh=Math.round(v*10)/10;el.dataset.manual="1";el.value="";saveState();updateDailyUsage();update();
 }
 function clearDailyUsage(){actualDailyUsageKwh=null;saveState();updateDailyUsage();update();}
 function updateDailyUsage(){
     const est=dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY;
-    const info=document.getElementById("dailyUsageInfo");
+    const info=$("dailyUsageInfo");
     if(actualDailyUsageKwh!==null){
-        const tag=_autoSavedDate===new Date().toDateString()&&!document.getElementById("dailyUsageInput").dataset.manual?
+        const tag=_autoSavedDate===new Date().toDateString()&&!$("dailyUsageInput").dataset.manual?
             ' (auto)':' (entered)';
         info.innerText=`✓ ${actualDailyUsageKwh} kWh${tag} — estimated was ${est.toFixed(1)} kWh`;
     } else {
@@ -1357,7 +1369,7 @@ function updateDailyUsage(){
 
 // ── Evening auto-save: locks in daily totals at 6 PM if user hasn't entered them ──
 function showAutoSaveToast(){
-    const el=document.getElementById("autoSaveToast");
+    const el=$("autoSaveToast");
     el.classList.add("show");
     setTimeout(()=>el.classList.remove("show"),4000);
 }
@@ -1398,7 +1410,7 @@ function checkDayRollover(){
     dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0; dailyAcOffHours=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
     _autoSavedDate=null; radiationLog=[];
-    const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
+    const du=$("dailyUsageInput"); if(du)du.dataset.manual="";
     _runningDay=today;
     saveState();
     updateSolarDaily(); updateDailyImport(); updateDailyUsage(); updateDailyExport();
@@ -1422,7 +1434,7 @@ function resetToday(){
     dailySolarKwh=0; dailyAcKwh=0; dailyImportKwh=0; dailyExportKwh=0; dailyAcOffHours=0;
     actualDailySolarKwh=null; actualDailyImportKwh=null; actualDailyUsageKwh=null; actualDailyExportKwh=null;
     manualSolarW=null; manualSolarTime=null; radiationLog=[];
-    const du=document.getElementById("dailyUsageInput"); if(du)du.dataset.manual="";
+    const du=$("dailyUsageInput"); if(du)du.dataset.manual="";
     // Drop today's snapshot from history so it rebuilds clean
     const today=new Date().toDateString();
     const idx=statsData.findIndex(d=>d.date===today);
@@ -1433,11 +1445,11 @@ function resetToday(){
     closeSettings();
 }
 function previewSelfSufficiency(){
-    const uVal=parseFloat(document.getElementById("dailyUsageInput").value);
-    const iVal=parseFloat(document.getElementById("dailyImportInput").value);
+    const uVal=parseFloat($("dailyUsageInput").value);
+    const iVal=parseFloat($("dailyImportInput").value);
     const usage=!isNaN(uVal)?uVal:(actualDailyUsageKwh!==null?actualDailyUsageKwh:(dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY));
     const imp=!isNaN(iVal)?iVal:(actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh);
-    const pv=document.getElementById("meterPreview"),pt=document.getElementById("meterPreviewText");
+    const pv=$("meterPreview"),pt=$("meterPreviewText");
     if(pv&&pt&&(!isNaN(uVal)||!isNaN(iVal))){
         const ss=usage>0?Math.round(Math.max(0,usage-imp)/usage*100):100;
         pt.innerText=`${ss}% self-sufficient · cost ~${(imp*RATE).toFixed(2)} XCG`;
@@ -1445,13 +1457,13 @@ function previewSelfSufficiency(){
     } else if(pv){pv.classList.add("hidden");}
 }
 function setDailyImport(){
-    const el=document.getElementById("dailyImportInput"),v=parseFloat(el.value);
+    const el=$("dailyImportInput"),v=parseFloat(el.value);
     if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
     actualDailyImportKwh=Math.round(v*10)/10;el.value="";saveState();updateDailyImport();update();
 }
 function clearDailyImport(){actualDailyImportKwh=null;saveState();updateDailyImport();update();}
 function updateDailyImport(){
-    const info=document.getElementById("dailyImportInfo");
+    const info=$("dailyImportInfo");
     if(actualDailyImportKwh!==null){
         info.innerText=`✓ Actual: ${actualDailyImportKwh} kWh (estimated was ${dailyImportKwh.toFixed(1)} kWh)`;
     } else {
@@ -1460,13 +1472,13 @@ function updateDailyImport(){
     updateExportAcOff();
 }
 function setDailyExport(){
-    const el=document.getElementById("dailyExportInput"),v=parseFloat(el.value);
+    const el=$("dailyExportInput"),v=parseFloat(el.value);
     if(isNaN(v)||v<0){el.classList.add("border-red-500");setTimeout(()=>el.classList.remove("border-red-500"),1200);return;}
     actualDailyExportKwh=Math.round(v*10)/10;el.value="";saveState();updateDailyExport();update();
 }
 function clearDailyExport(){actualDailyExportKwh=null;saveState();updateDailyExport();update();}
 function updateDailyExport(){
-    const info=document.getElementById("dailyExportInfo");
+    const info=$("dailyExportInfo");
     if(actualDailyExportKwh!==null){
         info.innerText=`✓ Actual: ${actualDailyExportKwh} kWh (estimated was ${dailyExportKwh.toFixed(1)} kWh)`;
     } else {
@@ -1488,11 +1500,11 @@ function updateExportAcOff(){
         :(solarDoneForToday?dailySolarKwh
         :Math.max(dailySolarKwh,estimateFullDaySolarKwh())));
     const expNoAc=Math.max(0,fullDaySol-(FRIDGE_DAILY+OTHER_DAILY));
-    const el=document.getElementById("exportIfAcOff");
+    const el=$("exportIfAcOff");
     if(el)el.innerText=`If AC off all day: ~${expNoAc.toFixed(1)} kWh export (full-day est.)`;
 }
 function updateSolarSourceUI(){
-    const src=document.getElementById("solarSource"),info=document.getElementById("solarManualInfo");
+    const src=$("solarSource"),info=$("solarManualInfo");
     if(manualSolarW!==null){
         const m=Math.floor((Date.now()-manualSolarTime)/60000);
         src.innerText="Manual inverter reading";
@@ -1526,7 +1538,7 @@ function uviInfo(u){
     return       {lbl:"Extreme",cls:"text-purple-400"};
 }
 function buildRain(intensity){
-    const w=document.getElementById("rainWrap");w.innerHTML="";
+    const w=$("rainWrap");w.innerHTML="";
     const n=Math.min(20,Math.ceil(intensity*45));
     for(let i=0;i<n;i++){const d=document.createElement("div");d.className="rdrop";const h=8+Math.random()*16;d.style.cssText=`height:${h}px;left:${(Math.random()*94).toFixed(1)}%;top:${(Math.random()*20).toFixed(1)}px;animation-delay:${(Math.random()*0.9).toFixed(2)}s;animation-duration:${(0.45+Math.random()*0.55).toFixed(2)}s;opacity:${(0.4+Math.random()*0.5).toFixed(2)}`;w.appendChild(d);}
 }
@@ -1578,16 +1590,16 @@ function kickWeather(){
     fetchKnmi();
 }
 function setKnmiStatus(s,src){
-    document.getElementById("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block "+(s==="ok"?"knmi-ok":s==="busy"?"knmi-busy pulse-dot":"knmi-err");
-    document.getElementById("knmiTxt").innerText=s==="ok"?(src||'Weather')+' LIVE':s==="busy"?"Weather…":"No data";
+    $("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block "+(s==="ok"?"knmi-ok":s==="busy"?"knmi-busy pulse-dot":"knmi-err");
+    $("knmiTxt").innerText=s==="ok"?(src||'Weather')+' LIVE':s==="busy"?"Weather…":"No data";
 }
 // Fetch failed: if real (cached) data is still on screen, say so instead of a
 // contradictory "No data". Only show the red error when there's truly nothing.
 function setKnmiFailStatus(){
     if(knmiData&&_wxCacheTs){
         const age=Math.round((Date.now()-_wxCacheTs)/60000);
-        document.getElementById("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block knmi-busy";
-        document.getElementById("knmiTxt").innerText="cached"+(age>0?' '+age+'m':'');
+        $("knmiDot").className="w-1.5 h-1.5 rounded-full inline-block knmi-busy";
+        $("knmiTxt").innerText="cached"+(age>0?' '+age+'m':'');
     } else {
         setKnmiStatus("err");
     }
@@ -1595,51 +1607,51 @@ function setKnmiFailStatus(){
 let _prevPressure=null;
 function applyKnmiUI(d,src){
     const feels=(d.temp_c!==null&&d.rh!==null)?heatIndex(d.temp_c,d.rh):(d.temp_c||31);
-    document.getElementById("wxFeels").innerText=(feels!==null?feels.toFixed(0):"—")+"°";
-    document.getElementById("wxAir").innerText=d.temp_c!==null?d.temp_c.toFixed(1):"—";
-    document.getElementById("wxDew").innerText=d.dew_c!==null?d.dew_c.toFixed(1):"—";
-    document.getElementById("wxRh").innerText=d.rh!==null?d.rh.toFixed(0):"—";
-    document.getElementById("wxCloud").innerText=d.cloud_octa!==null?d.cloud_octa:"—";
-    document.getElementById("wxCondition").innerText=o2l(d.cloud_octa);
-    document.getElementById("wxIcon").innerText=o2i(d.cloud_octa);
-    document.getElementById("outdoor").innerText=feels!==null?feels.toFixed(1)+"°C":"—°C";
+    $("wxFeels").innerText=(feels!==null?feels.toFixed(0):"—")+"°";
+    $("wxAir").innerText=d.temp_c!==null?d.temp_c.toFixed(1):"—";
+    $("wxDew").innerText=d.dew_c!==null?d.dew_c.toFixed(1):"—";
+    $("wxRh").innerText=d.rh!==null?d.rh.toFixed(0):"—";
+    $("wxCloud").innerText=d.cloud_octa!==null?d.cloud_octa:"—";
+    $("wxCondition").innerText=o2l(d.cloud_octa);
+    $("wxIcon").innerText=o2i(d.cloud_octa);
+    $("outdoor").innerText=feels!==null?feels.toFixed(1)+"°C":"—°C";
     if(d.slp!==null){
         const trend=_prevPressure!==null?(d.slp>_prevPressure+0.3?'↑':d.slp<_prevPressure-0.3?'↓':'→'):'';
-        document.getElementById("wxPressure").innerText=d.slp.toFixed(0)+" hPa";
-        document.getElementById("wxPressureTrend").innerText=trend;
-        document.getElementById("wxPressureHint").innerText=trend==='↑'?'rising':trend==='↓'?'falling':'stable';
+        $("wxPressure").innerText=d.slp.toFixed(0)+" hPa";
+        $("wxPressureTrend").innerText=trend;
+        $("wxPressureHint").innerText=trend==='↑'?'rising':trend==='↓'?'falling':'stable';
         _prevPressure=d.slp;
     }
-    if(d.time)document.getElementById("wxObsTime").innerText="Obs: "+d.time;
-    document.getElementById("wxWindKt").innerText=d.wind_kt!==null?d.wind_kt+" kt":"— kt";
-    document.getElementById("wxWindDir").innerText=wdLabel(d.wind_dir,d.wind_sector);
-    document.getElementById("wxGustKt").innerText=d.gust_kt!==null?"gust "+d.gust_kt+" kt":"gust — kt";
+    if(d.time)$("wxObsTime").innerText="Obs: "+d.time;
+    $("wxWindKt").innerText=d.wind_kt!==null?d.wind_kt+" kt":"— kt";
+    $("wxWindDir").innerText=wdLabel(d.wind_dir,d.wind_sector);
+    $("wxGustKt").innerText=d.gust_kt!==null?"gust "+d.gust_kt+" kt":"gust — kt";
     if(d.wind_dir!==null&&!isNaN(d.wind_dir))
-        document.getElementById("compassGroup").style.transform=`rotate(${d.wind_dir+180}deg)`;
+        $("compassGroup").style.transform=`rotate(${d.wind_dir+180}deg)`;
     const pr=d.precip_10m;
     if(pr!==null){
-        document.getElementById("wxPrecip").innerText=pr.toFixed(1)+" mm";
-        document.getElementById("wxRainStatus").innerText=pr<=0?"Dry":pr<0.5?"Light rain":pr<2?"Moderate":"Heavy rain";
-        document.getElementById("wxPrecipPeriod").innerText=src&&src.includes('Open-Meteo')?'per hr':'per 10 min';
+        $("wxPrecip").innerText=pr.toFixed(1)+" mm";
+        $("wxRainStatus").innerText=pr<=0?"Dry":pr<0.5?"Light rain":pr<2?"Moderate":"Heavy rain";
+        $("wxPrecipPeriod").innerText=src&&src.includes('Open-Meteo')?'per hr':'per 10 min';
         buildRain(pr);
     } else {
-        document.getElementById("wxPrecip").innerText="—";
-        document.getElementById("wxRainStatus").innerText="—";
+        $("wxPrecip").innerText="—";
+        $("wxRainStatus").innerText="—";
         buildRain(0);
     }
     const uvi=toUVI(d.radiation),ui=uviInfo(uvi);
     if(d.radiation!==null){
-        document.getElementById("wxUvNum").innerText=uvi.toFixed(1);
-        document.getElementById("wxUvNum").className="text-3xl font-bold tabular-nums "+ui.cls;
-        document.getElementById("wxUvLabel").innerText=ui.lbl;
-        document.getElementById("wxUvLabel").className="text-[11px] font-semibold "+ui.cls;
-        document.getElementById("uvCursor").style.left=`calc(${Math.min(100,uvi/13*100).toFixed(1)}% - 6px)`;
-        document.getElementById("wxRadiation").innerText=Math.round(d.radiation)+" W/m²";
+        $("wxUvNum").innerText=uvi.toFixed(1);
+        $("wxUvNum").className="text-3xl font-bold tabular-nums "+ui.cls;
+        $("wxUvLabel").innerText=ui.lbl;
+        $("wxUvLabel").className="text-[11px] font-semibold "+ui.cls;
+        $("uvCursor").style.left=`calc(${Math.min(100,uvi/13*100).toFixed(1)}% - 6px)`;
+        $("wxRadiation").innerText=Math.round(d.radiation)+" W/m²";
     } else {
-        document.getElementById("wxUvNum").innerText="—";
-        document.getElementById("wxUvNum").className="text-3xl font-bold text-green-400 tabular-nums";
-        document.getElementById("wxUvLabel").innerText="—";
-        document.getElementById("wxRadiation").innerText="— W/m²";
+        $("wxUvNum").innerText="—";
+        $("wxUvNum").className="text-3xl font-bold text-green-400 tabular-nums";
+        $("wxUvLabel").innerText="—";
+        $("wxRadiation").innerText="— W/m²";
     }
 }
 
@@ -1648,32 +1660,32 @@ function applyKnmiUI(d,src){
 ═══════════════════════════════════════════════════════ */
 function updateSolarGauge(sol){
     const pct=Math.min(100,Math.round(sol/MAX_SOLAR*100));
-    document.getElementById("solarArc").style.strokeDashoffset=201*(1-pct/100);
-    document.getElementById("solarArc").style.stroke=pct>70?"#34d399":pct>40?"#22d3ee":"#60a5fa";
-    document.getElementById("solarPctLabel").innerText=pct+"%";
+    $("solarArc").style.strokeDashoffset=201*(1-pct/100);
+    $("solarArc").style.stroke=pct>70?"#34d399":pct>40?"#22d3ee":"#60a5fa";
+    $("solarPctLabel").innerText=pct+"%";
 }
 
 /* ═══════════════════════════════════════════════════════
    POWER FLOW
 ═══════════════════════════════════════════════════════ */
 function updateFlowCard(sol,house,net){
-    document.getElementById("flowSolarW").innerText=sol+" W";
-    document.getElementById("flowHouseW").innerText=house+" W";
+    $("flowSolarW").innerText=sol+" W";
+    $("flowHouseW").innerText=house+" W";
     const exp=net>=0;
-    document.getElementById("flowGridW").innerText=(exp?"+":"")+net+" W";
-    document.getElementById("flowGridLbl").innerText=exp?"EXPORT":"IMPORT";
-    document.getElementById("flowGridLbl").className="text-[12px] mt-0.5 "+(exp?"text-emerald-400/60":"text-red-400/60");
-    document.getElementById("flowGridW").className="text-base font-bold tabular-nums "+(exp?"text-emerald-400":"text-red-400");
-    const gn=document.getElementById("flowGridNode");
+    $("flowGridW").innerText=(exp?"+":"")+net+" W";
+    $("flowGridLbl").innerText=exp?"EXPORT":"IMPORT";
+    $("flowGridLbl").className="text-[12px] mt-0.5 "+(exp?"text-emerald-400/60":"text-red-400/60");
+    $("flowGridW").className="text-base font-bold tabular-nums "+(exp?"text-emerald-400":"text-red-400");
+    const gn=$("flowGridNode");
     gn.className="flow-node "+(exp?"flow-node-grid":"flow-node-grid importing");
     ["gd1","gd2","gd3"].forEach(id=>{
-        const el=document.getElementById(id);
+        const el=$(id);
         el.className="fdot "+(exp?"bg-emerald-400":"bg-red-400 rev");
     });
     // Self-sufficiency: share of current house load met by solar right now
     const ss=house>0?Math.min(100,Math.round(sol/house*100)):0;
-    document.getElementById("selfSuff").innerText=ss+"% SOLAR-POWERED";
-    document.getElementById("selfSuff").className=ss>=100?"text-emerald-400":ss>=50?"text-emerald-400/70":"text-yellow-400/70";
+    $("selfSuff").innerText=ss+"% SOLAR-POWERED";
+    $("selfSuff").className=ss>=100?"text-emerald-400":ss>=50?"text-emerald-400/70":"text-yellow-400/70";
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1682,8 +1694,8 @@ function updateFlowCard(sol,house,net){
 function setStatsTab(tab){
     currentStatsTab=tab;
     ['day','week','month'].forEach(t=>{
-        document.getElementById("stats"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("hidden",t!==tab);
-        const btn=document.getElementById("tab"+t.charAt(0).toUpperCase()+t.slice(1));
+        $("stats"+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle("hidden",t!==tab);
+        const btn=$("tab"+t.charAt(0).toUpperCase()+t.slice(1));
         btn.classList.toggle("stats-tab-active",t===tab);
         btn.classList.toggle("text-white/50",t!==tab);
     });
@@ -1713,21 +1725,21 @@ function renderStatsToday(){
     // Export: prefer manual entry, then live (already gated to AC-off periods)
     const expDisplay=actualDailyExportKwh!==null?actualDailyExportKwh:dailyExportKwh;
     const cost=+(impDisplay*RATE-expDisplay*EXPORT_RATE);
-    document.getElementById("stTodaySolar").innerText=solDisplay.toFixed(1)+" kWh"+(actualDailySolarKwh!==null?' ✓':'')+(todayBill&&todayBill.dailySolarAvg!=null&&actualDailySolarKwh==null?' ✓':'');
-    document.getElementById("stTodayCost").innerText=cost.toFixed(2)+" XCG";
-    document.getElementById("stTodayExport").innerText=expDisplay.toFixed(1)+" kWh"+(actualDailyExportKwh!==null?' ✓':'');
-    document.getElementById("stTodayImport").innerText=impDisplay.toFixed(1)+" kWh"+(actualDailyImportKwh!==null?' ✓':'');
-    document.getElementById("stTodayAc").innerText=dailyAcKwh.toFixed(1)+" kWh";
-    document.getElementById("stTodayFridge").innerText=FRIDGE_DAILY.toFixed(1)+" kWh";
-    document.getElementById("stTodayOther").innerText=OTHER_DAILY.toFixed(1)+" kWh";
+    $("stTodaySolar").innerText=solDisplay.toFixed(1)+" kWh"+(actualDailySolarKwh!==null?' ✓':'')+(todayBill&&todayBill.dailySolarAvg!=null&&actualDailySolarKwh==null?' ✓':'');
+    $("stTodayCost").innerText=cost.toFixed(2)+" XCG";
+    $("stTodayExport").innerText=expDisplay.toFixed(1)+" kWh"+(actualDailyExportKwh!==null?' ✓':'');
+    $("stTodayImport").innerText=impDisplay.toFixed(1)+" kWh"+(actualDailyImportKwh!==null?' ✓':'');
+    $("stTodayAc").innerText=dailyAcKwh.toFixed(1)+" kWh";
+    $("stTodayFridge").innerText=FRIDGE_DAILY.toFixed(1)+" kWh";
+    $("stTodayOther").innerText=OTHER_DAILY.toFixed(1)+" kWh";
     const selfSuf=totDisplay>0?Math.round(Math.max(0,totDisplay-impDisplay)/totDisplay*100):100;
-    const ssEl=document.getElementById("stTodaySelfSuf");
+    const ssEl=$("stTodaySelfSuf");
     if(ssEl)ssEl.innerText=selfSuf+"% self-sufficient";
     if(yest){
         const dSol=solDisplay-yest.solar_kwh;
-        document.getElementById("stTodaySolarVsYest").innerHTML=(dSol>=0?'<span class="text-emerald-400">↑ +':'<span class="text-red-400">↓ ')+Math.abs(dSol).toFixed(1)+" kWh</span> vs yesterday";
+        $("stTodaySolarVsYest").innerHTML=(dSol>=0?'<span class="text-emerald-400">↑ +':'<span class="text-red-400">↓ ')+Math.abs(dSol).toFixed(1)+" kWh</span> vs yesterday";
         const dCost=cost-yest.cost_xcg;
-        document.getElementById("stTodayCostVsYest").innerHTML=(dCost<=0?'<span class="text-emerald-400">↓ -':'<span class="text-red-400">↑ +')+Math.abs(dCost).toFixed(2)+" XCG</span> vs yesterday";
+        $("stTodayCostVsYest").innerHTML=(dCost<=0?'<span class="text-emerald-400">↓ -':'<span class="text-red-400">↑ +')+Math.abs(dCost).toFixed(2)+" XCG</span> vs yesterday";
     }
 }
 
@@ -1773,14 +1785,14 @@ function computeDayProjection(){
     const projExp=actualDailyExportKwh!==null?actualDailyExportKwh:dailyExportKwh+Math.max(0,netRemaining);
     const projCostVal=projImp*RATE-projExp*EXPORT_RATE;
     const projSS=projUsage>0?Math.min(100,Math.round((projUsage-projImp)/projUsage*100)):100;
-    document.getElementById("projSolar").innerText=projSol.toFixed(1)+" kWh";
-    document.getElementById("projUsage").innerText=projUsage.toFixed(1)+" kWh";
-    document.getElementById("projImport").innerText=projImp.toFixed(1)+" kWh";
-    document.getElementById("projExport").innerText=projExp.toFixed(1)+" kWh";
-    document.getElementById("projCost").innerText=projCostVal.toFixed(2);
-    document.getElementById("projSelfSuf").innerText=projSS+"%";
+    $("projSolar").innerText=projSol.toFixed(1)+" kWh";
+    $("projUsage").innerText=projUsage.toFixed(1)+" kWh";
+    $("projImport").innerText=projImp.toFixed(1)+" kWh";
+    $("projExport").innerText=projExp.toFixed(1)+" kWh";
+    $("projCost").innerText=projCostVal.toFixed(2);
+    $("projSelfSuf").innerText=projSS+"%";
     const offHoursTxt=dailyAcOffHours>=0.05?` · off ${dailyAcOffHours.toFixed(1)}h`:'';
-    document.getElementById("projAcTag").innerText=(acMode?"AC ON "+setpoint+"°C":"AC OFF")+offHoursTxt;
+    $("projAcTag").innerText=(acMode?"AC ON "+setpoint+"°C":"AC OFF")+offHoursTxt;
     return{projSol,projUsage,projImp,projExp,projCostVal,projSS};
 }
 
@@ -1791,10 +1803,10 @@ function renderChart7(){
     const total7sol=days.reduce((a,d)=>a+d.solar_kwh,0);
     const total7cost=days.reduce((a,d)=>a+d.cost_xcg,0);
     const total7use=days.reduce((a,d)=>a+(d.total_kwh||0),0);
-    document.getElementById("st7Solar").innerText=total7sol.toFixed(1)+" kWh";
-    document.getElementById("st7Cost").innerText=total7cost.toFixed(2)+" XCG";
-    document.getElementById("st7Avg").innerText=(total7sol/days.length).toFixed(1)+" kWh";
-    const c=document.getElementById("chart7Bars");c.innerHTML="";
+    $("st7Solar").innerText=total7sol.toFixed(1)+" kWh";
+    $("st7Cost").innerText=total7cost.toFixed(2)+" XCG";
+    $("st7Avg").innerText=(total7sol/days.length).toFixed(1)+" kWh";
+    const c=$("chart7Bars");c.innerHTML="";
     days.forEach(d=>{
         const isToday=d.date===new Date().toDateString();
         const col=document.createElement("div");
@@ -1816,13 +1828,13 @@ function renderChart7(){
 function renderChart30(){
     const days=statsData.slice(-30);
     const total=days.reduce((a,d)=>({sol:a.sol+d.solar_kwh,cost:a.cost+d.cost_xcg}),{sol:0,cost:0});
-    document.getElementById("st30Solar").innerText=total.sol.toFixed(0)+" kWh";
-    document.getElementById("st30Cost").innerText=total.cost.toFixed(1)+" XCG";
+    $("st30Solar").innerText=total.sol.toFixed(0)+" kWh";
+    $("st30Cost").innerText=total.cost.toFixed(1)+" XCG";
     const best=days.reduce((a,d)=>d.solar_kwh>a.solar_kwh?d:a,days[0]);
     const worst=days.reduce((a,d)=>d.solar_kwh<a.solar_kwh?d:a,days[0]);
-    document.getElementById("st30Best").innerText=best?best.solar_kwh.toFixed(1)+" kWh":"—";
-    document.getElementById("st30Worst").innerText=worst?worst.solar_kwh.toFixed(1)+" kWh":"—";
-    const c=document.getElementById("chart30Bars");c.innerHTML="";
+    $("st30Best").innerText=best?best.solar_kwh.toFixed(1)+" kWh":"—";
+    $("st30Worst").innerText=worst?worst.solar_kwh.toFixed(1)+" kWh":"—";
+    const c=$("chart30Bars");c.innerHTML="";
     days.forEach(d=>{
         const isToday=d.date===new Date().toDateString();
         const sh=kwhH(d.solar_kwh);
@@ -1996,28 +2008,28 @@ function update(){
     if(!acMode)dailyAcOffHours+=elapsedH;
 
     // Solar
-    document.getElementById("solar").innerText=sol+" W";
-    document.getElementById("dailySolar").innerText=dailySolarKwh.toFixed(1)+" kWh";
-    document.getElementById("headerSolarKwh").innerText="SOLAR "+dailySolarKwh.toFixed(1)+" kWh";
+    $("solar").innerText=sol+" W";
+    $("dailySolar").innerText=dailySolarKwh.toFixed(1)+" kWh";
+    $("headerSolarKwh").innerText="SOLAR "+dailySolarKwh.toFixed(1)+" kWh";
     updateSolarGauge(sol); updateSolarSourceUI(); updateSolarDaily(); updateDailyUsage(); updateDailyImport();
 
     // Indoor
-    document.getElementById("indoor").innerText=indoor.toFixed(1)+"°C";
+    $("indoor").innerText=indoor.toFixed(1)+"°C";
     const delta=indoor-setpoint;
-    document.getElementById("indoorDelta").innerText=(delta>=0?"+":"")+delta.toFixed(1)+"°C";
-    document.getElementById("indoorDelta").className="font-semibold tabular-nums "+(Math.abs(delta)<0.5?"text-emerald-400":Math.abs(delta)<1.5?"text-yellow-400":"text-red-400");
+    $("indoorDelta").innerText=(delta>=0?"+":"")+delta.toFixed(1)+"°C";
+    $("indoorDelta").className="font-semibold tabular-nums "+(Math.abs(delta)<0.5?"text-emerald-400":Math.abs(delta)<1.5?"text-yellow-400":"text-red-400");
 
     // House
-    document.getElementById("houseTotal").innerText=house+" W";
-    document.getElementById("bdAc").innerText=ac+" W";
-    document.getElementById("bdFridge").innerText=fridge.w+" W";
-    document.getElementById("bdOther").innerText=other+" W";
-    document.getElementById("bdAcBar").style.width=Math.round(ac/house*100)+"%";
-    document.getElementById("bdFridgeBar").style.width=Math.round(fridge.w/house*100)+"%";
-    document.getElementById("bdOtherBar").style.width=Math.round(other/house*100)+"%";
+    $("houseTotal").innerText=house+" W";
+    $("bdAc").innerText=ac+" W";
+    $("bdFridge").innerText=fridge.w+" W";
+    $("bdOther").innerText=other+" W";
+    $("bdAcBar").style.width=Math.round(ac/house*100)+"%";
+    $("bdFridgeBar").style.width=Math.round(fridge.w/house*100)+"%";
+    $("bdOtherBar").style.width=Math.round(other/house*100)+"%";
 
     // Solar card glow
-    const sc=document.getElementById("solarCard");
+    const sc=$("solarCard");
     sc.className=sc.className.replace(/card-glow-\w+/g,"").trim();
     if(sol>80)sc.classList.add("card-glow-green");
 
@@ -2030,13 +2042,13 @@ function update(){
     const proj=computeDayProjection();
 
     // Cost
-    document.getElementById("daily").innerText=proj.projCostVal.toFixed(2)+" XCG";
-    document.getElementById("monthly").innerText=(proj.projCostVal*30).toFixed(1)+" XCG";
+    $("daily").innerText=proj.projCostVal.toFixed(2)+" XCG";
+    $("monthly").innerText=(proj.projCostVal*30).toFixed(1)+" XCG";
     const worstDayUsage=AC_PROFILES[26].dailyKwh+FRIDGE_DAILY+OTHER_DAILY;
     const worstDayImp=Math.max(0,worstDayUsage-proj.projSol),worstDayExp=Math.max(0,proj.projSol-worstDayUsage);
     const worstDayCost=worstDayImp*RATE-worstDayExp*EXPORT_RATE;
-    document.getElementById("savings").innerText=Math.max(0,(worstDayCost-proj.projCostVal)*30).toFixed(0)+" XCG saved";
-    document.getElementById("dailyTrend").innerHTML=proj.projCostVal<=0
+    $("savings").innerText=Math.max(0,(worstDayCost-proj.projCostVal)*30).toFixed(0)+" XCG saved";
+    $("dailyTrend").innerHTML=proj.projCostVal<=0
         ?`<i class="fas fa-arrow-down mr-1"></i>EARNING FROM SOLAR`
         :`<i class="fas fa-bolt mr-1"></i>${acMode?"AC AT "+setpoint+"°C":"AC OFF — LOWEST COST"}`;
 
@@ -2102,7 +2114,7 @@ function findBillForDate(dateStr){
 
 // ── Upload → OCR (runs entirely on the phone; the photo is never uploaded) ──
 function setBillStatus(html){
-    const el=document.getElementById('billOcrStatus');
+    const el=$('billOcrStatus');
     if(html===null){el.classList.add('hidden');return;}
     el.classList.remove('hidden'); el.innerHTML=html;
 }
@@ -2182,18 +2194,18 @@ const BILL_INPUT_IDS={dateStart:'billStart',dateEnd:'billEnd',impKwh:'billImp',e
 let _billEditId=null;
 function openBillReview(p,note){
     _billEditId=p&&p.id||null;
-    for(const f in BILL_INPUT_IDS)document.getElementById(BILL_INPUT_IDS[f]).value=(p&&p[f]!=null)?p[f]:'';
-    const n=document.getElementById('billReviewNote');
+    for(const f in BILL_INPUT_IDS)$(BILL_INPUT_IDS[f]).value=(p&&p[f]!=null)?p[f]:'';
+    const n=$('billReviewNote');
     if(note){n.innerText=note;n.classList.remove('hidden');}else n.classList.add('hidden');
-    document.getElementById('billOverlay').classList.remove('hidden');
+    $('billOverlay').classList.remove('hidden');
 }
-function closeBillReview(){document.getElementById('billOverlay').classList.add('hidden');_billEditId=null;}
+function closeBillReview(){$('billOverlay').classList.add('hidden');_billEditId=null;}
 function addBillManually(){openBillReview({},null);}
 function editBill(id){const b=billsData.find(x=>x.id===id);if(b)openBillReview(b,null);}
 function saveBillReview(){
     const b=(_billEditId?billsData.find(x=>x.id===_billEditId):null)||{};
     for(const f in BILL_INPUT_IDS){
-        const v=document.getElementById(BILL_INPUT_IDS[f]).value.trim();
+        const v=$(BILL_INPUT_IDS[f]).value.trim();
         if(f==='dateStart'||f==='dateEnd')b[f]=v;
         else{const n=parseFloat(v);b[f]=isFinite(n)?n:null;}
     }
@@ -2227,7 +2239,7 @@ function applyBillRates(){
     RATE=+r.toFixed(3); if(er)EXPORT_RATE=+er.toFixed(3);
     try{localStorage.setItem("powerSettings",JSON.stringify({RATE,EXPORT_RATE,MAX_SOLAR,FRIDGE_RUN_W,MAX_AC}));}catch(e){}
     recomputeDerived();
-    const rl=document.getElementById("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
+    const rl=$("rateLabel"); if(rl)rl.innerText=RATE.toFixed(2)+" XCG/kWh";
     renderBills();update();
 }
 
@@ -2235,7 +2247,7 @@ function escapeHtml(s){
     return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function renderBills(){
-    const list=document.getElementById('billsList'),ins=document.getElementById('billInsights');
+    const list=$('billsList'),ins=$('billInsights');
     if(!list)return;
     list.innerHTML='';
     if(!billsData.length){
@@ -2300,7 +2312,7 @@ let _notifEnabled=false;
 
 function initNotifBtn(){
     if(!('Notification' in window))return;
-    const btn=document.getElementById("notifBtn");
+    const btn=$("notifBtn");
     if(Notification.permission==='granted'){
         _notifEnabled=true;
         if(btn){btn.classList.remove("hidden");btn.title="Notifications on";btn.querySelector("i").className="fas fa-bell text-sm text-emerald-400";}
@@ -2316,7 +2328,7 @@ async function requestNotifications(){
         return;
     }
     const perm=await Notification.requestPermission();
-    const btn=document.getElementById("notifBtn");
+    const btn=$("notifBtn");
     if(perm==='granted'){
         _notifEnabled=true;
         if(btn){btn.title="Notifications on";btn.querySelector("i").className="fas fa-bell text-sm text-emerald-400";}
@@ -2360,11 +2372,11 @@ async function initialize(){
     loadBills(); renderBills(); // Aqualectra bill history
     updateSolarDaily(); updateDailyImport(); updateDailyUsage(); updateDailyExport(); // init daily displays
     checkEveningAutoSave(); // catch case where app opened after 6 PM
-    document.getElementById("solarManualInput").addEventListener("keydown",e=>{if(e.key==="Enter")applyManualSolar();});
-    document.getElementById("solarDailyInput").addEventListener("keydown",e=>{if(e.key==="Enter")setSolarDaily();});
-    document.getElementById("dailyUsageInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyUsage();});
-    document.getElementById("dailyImportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyImport();});
-    document.getElementById("dailyExportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyExport();});
+    $("solarManualInput").addEventListener("keydown",e=>{if(e.key==="Enter")applyManualSolar();});
+    $("solarDailyInput").addEventListener("keydown",e=>{if(e.key==="Enter")setSolarDaily();});
+    $("dailyUsageInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyUsage();});
+    $("dailyImportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyImport();});
+    $("dailyExportInput").addEventListener("keydown",e=>{if(e.key==="Enter")setDailyExport();});
     setMode(acMode); setSetpoint(setpoint);
     updateClock(); setInterval(updateClock,1000);
     update(); setInterval(update,1200);
@@ -2416,10 +2428,10 @@ _requestWakeLock();
 let _installPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{
     e.preventDefault(); _installPrompt=e;
-    document.getElementById('installBtn').classList.remove('hidden');
+    $('installBtn').classList.remove('hidden');
 });
 window.addEventListener('appinstalled',()=>{
-    document.getElementById('installBtn').classList.add('hidden');
+    $('installBtn').classList.add('hidden');
     _installPrompt=null;
 });
 function installPWA(){
