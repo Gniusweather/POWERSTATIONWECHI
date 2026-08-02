@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v114-no-stuck-hover';
-// Force update: card hover-lift only applies on real hover-capable devices, not touchscreens
+const CACHE = 'powerdash-v115-side-by-side-cost';
+// Force update: Today's Cost and 30-Day Projection now side by side in one tile
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
