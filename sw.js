@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v111-recalibrate';
-// Force update: recalibrated solar and AC-usage estimates against real-world numbers
+const CACHE = 'powerdash-v112-perf-cleanup';
+// Force update: cached DOM lookups, aborted losing weather-proxy requests, removed dead code
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
