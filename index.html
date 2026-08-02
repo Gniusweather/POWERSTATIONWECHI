@@ -55,7 +55,12 @@
             content:''; position:absolute; inset:0; pointer-events:none;
             background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 50%);
         }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5); }
+        /* Only devices with real hover (mouse/trackpad) get the lift — on a
+           touchscreen, tapping a card can trigger :hover with no clean way to
+           clear it, leaving that card visually "stuck" lifted. */
+        @media (hover: hover) {
+            .card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5); }
+        }
 
         /* accent top line per card type */
         .card-accent-green::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #34d399, transparent); }
@@ -711,29 +716,29 @@
                 </div>
             </div>
 
-            <!-- DAILY COST -->
-            <div class="card rounded-3xl p-4 card-accent-yellow">
-                <div class="flex items-center gap-3 mb-3">
-                    <i class="fas fa-coins text-3xl text-yellow-400"></i>
+            <!-- COST + 30-DAY PROJECTION -->
+            <div class="card rounded-3xl p-4 card-accent-yellow lg:col-span-2">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <div class="text-[15px] font-bold">Today's Cost</div>
-                        <div id="rateLabel" class="text-[11px] text-white/40">0.68 XCG/kWh</div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-coins text-2xl text-yellow-400"></i>
+                            <div>
+                                <div class="text-[15px] font-bold">Today's Cost</div>
+                                <div id="rateLabel" class="text-[11px] text-white/40">0.68 XCG/kWh</div>
+                            </div>
+                        </div>
+                        <div id="daily" class="text-3xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
+                        <div id="dailyTrend" class="text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1.5"></div>
                     </div>
-                </div>
-                <div id="daily" class="text-4xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
-                <div id="dailyTrend" class="text-[11px] text-emerald-400 mt-1.5 flex items-center gap-1.5"></div>
-            </div>
-
-            <!-- MONTHLY -->
-            <div class="card rounded-3xl p-4 card-accent-purple">
-                <div class="mb-3">
-                    <div class="text-[15px] font-bold">30-Day Projection</div>
-                    <div class="text-[11px] text-white/40">based on today's rate</div>
-                </div>
-                <div id="monthly" class="text-4xl font-bold text-purple-400 tabular-nums">0.0 XCG</div>
-                <div class="mt-4 flex items-center gap-2 text-xs">
-                    <div class="px-2.5 py-1 bg-white/08 rounded-full border border-white/10 text-white/50">VS 26°C</div>
-                    <div id="savings" class="font-bold text-emerald-400">0 XCG saved</div>
+                    <div class="pl-4 border-l border-white/[0.08]">
+                        <div class="text-[15px] font-bold mb-0.5">30-Day Projection</div>
+                        <div class="text-[11px] text-white/40 mb-2">based on today's rate</div>
+                        <div id="monthly" class="text-3xl font-bold text-purple-400 tabular-nums">0.0 XCG</div>
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            <div class="px-2.5 py-1 bg-white/08 rounded-full border border-white/10 text-white/50">VS 26°C</div>
+                            <div id="savings" class="font-bold text-emerald-400">0 XCG saved</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
