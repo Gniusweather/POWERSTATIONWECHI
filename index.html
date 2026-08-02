@@ -55,7 +55,12 @@
             content:''; position:absolute; inset:0; pointer-events:none;
             background: linear-gradient(160deg, rgba(255,255,255,0.03) 0%, transparent 50%);
         }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5); }
+        /* Only devices with real hover (mouse/trackpad) get the lift — on a
+           touchscreen, tapping a card can trigger :hover with no clean way to
+           clear it, leaving that card visually "stuck" lifted. */
+        @media (hover: hover) {
+            .card:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -12px rgba(0,0,0,0.5); }
+        }
 
         /* accent top line per card type */
         .card-accent-green::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(to right, transparent, #34d399, transparent); }

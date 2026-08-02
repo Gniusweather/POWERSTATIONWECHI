@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v113-merged-cost-tile';
-// Force update: merged Today's Cost and 30-Day Projection into one tile
+const CACHE = 'powerdash-v114-no-stuck-hover';
+// Force update: card hover-lift only applies on real hover-capable devices, not touchscreens
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
