@@ -1885,6 +1885,11 @@ function radiationToSol(r){ return (r!=null&&r>0)?Math.round(r*MAX_SOLAR/1000*0.
 const TYPICAL_SUN_HOURS=7;
 const FALLBACK_DAILY_SOLAR_KWH=6;
 function estimateFullDaySolarKwh(){
+    // A manual inverter reading is the user's own ground truth for current
+    // output — extrapolate from that instead of a live KNMI radiation
+    // reading (or ignoring it and using the flat fallback), matching how
+    // solar()/estimateGapEnergy already prioritize it above all else.
+    if(manualSolarW!==null)return manualSolarW*TYPICAL_SUN_HOURS/1000;
     return knmiData&&knmiData.radiation>0
         ?knmiData.radiation*MAX_SOLAR/1000*0.88*TYPICAL_SUN_HOURS/1000
         :FALLBACK_DAILY_SOLAR_KWH;

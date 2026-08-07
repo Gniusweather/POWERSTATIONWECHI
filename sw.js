@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v115-side-by-side-cost';
-// Force update: Today's Cost and 30-Day Projection now side by side in one tile
+const CACHE = 'powerdash-v116-manual-solar-proj';
+// Force update: day projection's fallback estimate now respects an active manual solar override
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
