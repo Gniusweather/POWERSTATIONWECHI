@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v116-manual-solar-proj';
-// Force update: day projection's fallback estimate now respects an active manual solar override
+const CACHE = 'powerdash-v117-real-rates';
+// Force update: default import/export rates calibrated from a real Aqualectra bill
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
