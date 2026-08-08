@@ -724,7 +724,7 @@
                             <i class="fas fa-coins text-2xl text-yellow-400"></i>
                             <div>
                                 <div class="text-[15px] font-bold">Today's Cost</div>
-                                <div id="rateLabel" class="text-[11px] text-white/40">0.68 XCG/kWh</div>
+                                <div id="rateLabel" class="text-[11px] text-white/40">0.63 XCG/kWh</div>
                             </div>
                         </div>
                         <div id="daily" class="text-3xl font-bold text-yellow-400 tabular-nums">0.00 XCG</div>
@@ -1136,8 +1136,11 @@ const AC_REF_PEAK=1280;
 const AC_REF={26:{base:680,dailyKwh:9.0},27:{base:585,dailyKwh:7.4},28:{base:510,dailyKwh:6.1}};
 
 // User-configurable (defaults below). Mutated by the Settings panel.
-let RATE=0.68;          // import price XCG/kWh
-let EXPORT_RATE=0.27;   // feed-in credit XCG/kWh
+// RATE/EXPORT_RATE calibrated from a real Aqualectra bill (Aug 2026 period):
+// Konsumo Normal di Koriente 237.40 XCG / 376 kWh imported = 0.6314,
+// Entrega Energia Solar 6.50 XCG / 26 kWh exported = 0.25 exactly.
+let RATE=0.6314;        // import price XCG/kWh
+let EXPORT_RATE=0.25;   // feed-in credit XCG/kWh
 let MAX_SOLAR=920;      // panel peak W
 let FRIDGE_RUN_W=150;   // fridge compressor running W
 let MAX_AC=1280;        // AC peak/rated power W
