@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v117-real-rates';
-// Force update: default import/export rates calibrated from a real Aqualectra bill
+const CACHE = 'powerdash-v118-export-gate-fixes';
+// Force update: 26C savings comparison and saved daily history now correctly gate export to AC-off periods
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 // ── Install: precache local app shell ──────────────────────────────────────
