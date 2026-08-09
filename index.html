@@ -1297,7 +1297,10 @@ function saveStats(dateStr){
     const importVal=actualDailyImportKwh!==null?actualDailyImportKwh:dailyImportKwh;
     const estUsage=dailyAcKwh+FRIDGE_DAILY+OTHER_DAILY;
     const totalUsage=actualDailyUsageKwh!==null?actualDailyUsageKwh:estUsage;
-    const exportVal=actualDailyExportKwh!==null?actualDailyExportKwh:Math.max(0,solarVal-totalUsage+importVal);
+    // Export: prefer manual entry, then the live accumulator (already
+    // correctly gated to AC-off periods) — not a residual recompute, which
+    // wouldn't reflect that rule and could drift from the real tracked value.
+    const exportVal=actualDailyExportKwh!==null?actualDailyExportKwh:dailyExportKwh;
     const snap={date:today,solar_kwh:+solarVal.toFixed(1),import_kwh:+importVal.toFixed(1),export_kwh:+exportVal.toFixed(1),ac_kwh:+dailyAcKwh.toFixed(1),fridge_kwh:+FRIDGE_DAILY.toFixed(1),other_kwh:+OTHER_DAILY.toFixed(1),total_kwh:+totalUsage.toFixed(1),cost_xcg:+(importVal*RATE-exportVal*EXPORT_RATE).toFixed(2)};
     const idx=statsData.findIndex(d=>d.date===today);
     if(idx>=0)statsData[idx]=snap; else statsData.push(snap);
@@ -2058,7 +2061,10 @@ function update(){
     $("daily").innerText=proj.projCostVal.toFixed(2)+" XCG";
     $("monthly").innerText=(proj.projCostVal*30).toFixed(1)+" XCG";
     const worstDayUsage=AC_PROFILES[26].dailyKwh+FRIDGE_DAILY+OTHER_DAILY;
-    const worstDayImp=Math.max(0,worstDayUsage-proj.projSol),worstDayExp=Math.max(0,proj.projSol-worstDayUsage);
+    // AC is on the whole hypothetical day here, so — same export-only-while-
+    // off rule as everywhere else — no export is ever possible even when
+    // solar exceeds this usage; it'd just be curtailed, not exported.
+    const worstDayImp=Math.max(0,worstDayUsage-proj.projSol),worstDayExp=0;
     const worstDayCost=worstDayImp*RATE-worstDayExp*EXPORT_RATE;
     $("savings").innerText=Math.max(0,(worstDayCost-proj.projCostVal)*30).toFixed(0)+" XCG saved";
     $("dailyTrend").innerHTML=proj.projCostVal<=0
