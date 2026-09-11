@@ -1,10 +1,9 @@
-const CACHE = 'powerdash-v119-radiation-backfill-fix';
-// Force update: Open-Meteo radiation now backfills KNMI Bonaire results when
-// KNMI wins the weather-source race (KNMI's page has no radiation field, so
-// it used to silently blank the solar irradiance card and panel estimate).
+const CACHE = 'powerdash-v120-trim-indoor-house-cost';
+// Force update: dropped Indoor / House Total / Today's Cost cards.
+// Also: chart empty-state guards, self-sufficiency clamp, null-safe DOM writes.
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
-// ── Install: precache local app shell ──────────────────────────────────────
+// ── Install: precache local app shell ─────────────────────────────────────
 self.addEventListener('install', e => {
     e.waitUntil(
         caches.open(CACHE)
@@ -13,7 +12,7 @@ self.addEventListener('install', e => {
     );
 });
 
-// ── Activate: purge old caches ─────────────────────────────────────────────
+// ── Activate: purge old caches ─────────────────────────────────────
 self.addEventListener('activate', e => {
     e.waitUntil(
         caches.keys()
@@ -22,7 +21,7 @@ self.addEventListener('activate', e => {
     );
 });
 
-// ── Fetch strategy ─────────────────────────────────────────────────────────
+// ── Fetch strategy ───────────────────────────────────────
 self.addEventListener('fetch', e => {
     const url = new URL(e.request.url);
 
