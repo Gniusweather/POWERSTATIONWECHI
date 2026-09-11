@@ -1,6 +1,5 @@
-const CACHE = 'powerdash-v123-wx-proj-tiles';
-// v123: minimal Bonaire weather tile + titled day/month usage & cost projection.
-// Still strips Indoor / House Total / Today's Cost from the committed index.html.
+const CACHE = 'powerdash-v124-bugsweep';
+// v124: null-safe DOM, projection clamp, empty-chart guards, stubs before init.
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 const STRIP_IDS = ['indoor','setpointLabel','outdoor','indoorDelta','houseTotal','bdAcBar','bdAc','bdFridgeBar','bdFridge','bdOtherBar','bdOther','rateLabel','daily','dailyTrend','monthly','savings'];
@@ -10,7 +9,7 @@ const WEATHER_HTML = `
             <div class="card rounded-3xl p-5 card-accent-sky">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2.5">
-                        <div id="wxIcon" class="text-4xl leading-none" style="filter:drop-shadow(0 0 14px rgba(56,189,248,0.55))">☁️</div>
+                        <div id="wxIcon" class="text-4xl leading-none" style="filter:drop-shadow(0 0 14px rgba(56,189,248,0.55))">⛅</div>
                         <div>
                             <div class="text-[15px] font-bold">Bonaire weather</div>
                             <div id="wxCondition" class="text-[11px] text-sky-400 mt-0.5 tracking-widest uppercase">—</div>
@@ -105,8 +104,55 @@ const PATCH_SCRIPT = `
 </script>
 `;
 
+function patchJs(html){
+    if(typeof html!=='string')return html;
+
+    html=html.replace(
+        'function $(id){ return _elCache[id]||(_elCache[id]=document.getElementById(id)); }',
+        'function $(id){ var e=_elCache[id]; if(e)return e; e=document.getElementById(id); if(e)return (_elCache[id]=e); if(!_dummyEl){ _dummyEl=document.createElement("div"); _dummyEl.hidden=true; _dummyEl.style.width="0px"; } return _dummyEl; }\nvar _dummyEl=null;'
+    );
+
+    html=html.replace(
+        'const projSS=projUsage>0?Math.min(100,Math.round((projUsage-projImp)/projUsage*100)):100;',
+        'const projSS=projUsage>0?Math.max(0,Math.min(100,Math.round((projUsage-projImp)/projUsage*100))):100;'
+    );
+
+    html=html.replace(
+        'function buildRain(intensity){\n    const w=$("rainWrap");w.innerHTML="";',
+        'function buildRain(intensity){\n    const w=$("rainWrap");if(!w)return;w.innerHTML="";'
+    );
+
+    html=html.replace(
+        'function renderChart7(){\n    const days=statsData.slice(-7);\n    const total7sol=days.reduce((a,d)=>a+d.solar_kwh,0);',
+        'function renderChart7(){\n    const days=statsData.slice(-7);\n    if(!days.length){const z=$("chart7Bars");if(z)z.innerHTML="";return;}\n    const total7sol=days.reduce((a,d)=>a+(d.solar_kwh||0),0);'
+    );
+
+    html=html.replace(
+        'function renderChart30(){\n    const days=statsData.slice(-30);\n    const total=days.reduce((a,d)=>({sol:a.sol+d.solar_kwh,cost:a.cost+d.cost_xcg}),{sol:0,cost:0});',
+        'function renderChart30(){\n    const days=statsData.slice(-30);\n    if(!days.length){const z=$("chart30Bars");if(z)z.innerHTML="";return;}\n    const total=days.reduce((a,d)=>({sol:a.sol+(d.solar_kwh||0),cost:a.cost+(d.cost_xcg||0)}),{sol:0,cost:0});'
+    );
+
+    html=html.replace(
+        'const c=$("chart7Bars");c.innerHTML="";',
+        'const c=$("chart7Bars");if(!c)return;c.innerHTML="";'
+    );
+    html=html.replace(
+        'const c=$("chart30Bars");c.innerHTML="";',
+        'const c=$("chart30Bars");if(!c)return;c.innerHTML="";'
+    );
+
+    html=html.replace(
+        'function updateAcLabels(){\n    $("setpointLabel").innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";\n}',
+        'function updateAcLabels(){\n    const el=$("setpointLabel"); if(el)el.innerText=acMode?`Setpoint: ${setpoint}.0°C`:"AC off";\n}'
+    );
+
+    return html;
+}
+
 function restyleDashboard(html){
     if(typeof html!=='string')return html;
+
+    html=patchJs(html);
 
     if(html.indexOf('<!-- INDOOR -->')>=0){
         html=html.replace(
@@ -129,9 +175,11 @@ function restyleDashboard(html){
         );
     }
 
-    if(STRIP_IDS.some(id=>html.indexOf('id="'+id+'"')<0)){
-        const stubs=STRIP_IDS.map(id=>'<div id="'+id+'" hidden></div>').join('');
-        html=html.replace('</body>', stubs+'\n</body>');
+    const missing=STRIP_IDS.filter(id=>html.indexOf('id="'+id+'"')<0);
+    if(missing.length){
+        const stubs=missing.map(id=>'<div id="'+id+'" hidden></div>').join('');
+        if(html.indexOf('<body>')>=0) html=html.replace('<body>', '<body>\n'+stubs);
+        else html=html.replace('</body>', stubs+'\n</body>');
     }
 
     if(html.indexOf('id="uiPatchv123"')<0){
@@ -148,14 +196,17 @@ function rewriteIfDashboard(request, response){
     if(!nav && !isIndex)return Promise.resolve(response);
     const ct=(response.headers.get('content-type')||'').toLowerCase();
     if(ct.includes('javascript') || ct.includes('json') || ct.includes('image'))return Promise.resolve(response);
+    const clone=response.clone();
     return response.text().then(text=>{
-        if(!text||text.indexOf('<html')<0 && text.indexOf('<HTML')<0 && text.indexOf('<!DOCTYPE')<0)return response;
+        if(!text || (text.indexOf('<html')<0 && text.indexOf('<HTML')<0 && text.indexOf('<!DOCTYPE')<0 && text.indexOf('<!doctype')<0)){
+            return clone;
+        }
         const out=restyleDashboard(text);
         const headers=new Headers(response.headers);
         headers.set('content-type','text/html; charset=utf-8');
         headers.delete('content-length');
         return new Response(out,{status:200, statusText:response.statusText, headers});
-    }).catch(()=>response);
+    }).catch(()=>clone);
 }
 
 self.addEventListener('install', e => {
@@ -183,6 +234,7 @@ self.addEventListener('fetch', e => {
     }
 
     if (url.hostname === self.location.hostname || url.protocol === 'file:') {
+        const nav=e.request.mode==='navigate' || e.request.destination==='document';
         e.respondWith(
             caches.open(CACHE).then(c =>
                 c.match(e.request).then(cached => {
@@ -190,10 +242,8 @@ self.addEventListener('fetch', e => {
                         if (r && r.status === 200) c.put(e.request, r.clone());
                         return r;
                     }).catch(()=>null);
-                    return Promise.resolve(cached || fromNet).then(r => {
-                        if(!r) return (cached||fromNet);
-                        return rewriteIfDashboard(e.request, r);
-                    });
+                    const raw = nav ? fromNet.then(r=>r||cached) : Promise.resolve(cached).then(r=>r||fromNet);
+                    return raw.then(r => r ? rewriteIfDashboard(e.request, r) : r);
                 })
             )
         );
