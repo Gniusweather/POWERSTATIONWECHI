@@ -1,5 +1,5 @@
-const CACHE = 'powerdash-v126-wyoming-hato';
-// v126: Hato/Curacao weather + University of Wyoming 78988 sounding indices.
+const CACHE = 'powerdash-v127-bugsweep';
+// v127: fix Wyoming index parser (over-escaped regex never matched the table).
 const LOCAL_FILES = ['./', './index.html', './manifest.json', './icon.svg'];
 
 const STRIP_IDS = ['indoor','setpointLabel','outdoor','indoorDelta','houseTotal','bdAcBar','bdAc','bdFridgeBar','bdFridge','bdOtherBar','bdOther','rateLabel','daily','dailyTrend','monthly','savings'];
@@ -81,7 +81,7 @@ const PROJ_HTML = `
 `;
 
 const PATCH_SCRIPT = `
-<script id="uiPatchv123">
+<script id="uiPatchv127">
 (function(){
   function tick(){
     var u=document.getElementById('projUsage');
@@ -93,50 +93,61 @@ const PATCH_SCRIPT = `
     if(isFinite(uk)) mu.textContent=(Math.max(0,uk)*30).toFixed(0)+' kWh';
     if(isFinite(ck)) mc.textContent=(ck*30).toFixed(1)+' XCG';
   }
-  function wySlot(){
-    var n=new Date(), h=n.getUTCHours();
-    var use12=h>=14;
-    var d=new Date(Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate(),use12?12:0,0,0));
-    if(h<2) d.setUTCDate(d.getUTCDate()-1);
-    function p(x){return String(x).padStart(2,'0');}
-    return d.getUTCFullYear()+'-'+p(d.getUTCMonth()+1)+'-'+p(d.getUTCDate())+' '+p(d.getUTCHours())+':00:00';
+  function pad(x){return String(x).padStart(2,'0');}
+  function slots(){
+    var n=new Date(), h=n.getUTCHours(), base=Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()), out=[];
+    function stamp(day,hr){return day.getUTCFullYear()+'-'+pad(day.getUTCMonth()+1)+'-'+pad(day.getUTCDate())+' '+pad(hr)+':00:00';}
+    var today=new Date(base), yest=new Date(base); yest.setUTCDate(yest.getUTCDate()-1);
+    if(h>=14) out.push(stamp(today,12), stamp(today,0), stamp(yest,12));
+    else if(h>=2) out.push(stamp(today,0), stamp(yest,12), stamp(yest,0));
+    else out.push(stamp(yest,12), stamp(yest,0));
+    return out;
   }
   function grab(html,code){
-    var re=new RegExp(code+'</TD>\\s*<TD>[^<]*</TD>\\s*<TD[^>]*>\\s*([\\d.-]+)','i');
-    var m=String(html).match(re);
-    return m?m[1]:null;
+    var s=String(html||'');
+    var i=s.indexOf(code+'</TD>');
+    var chunk=i>=0?s.slice(i,i+420):'';
+    if(!chunk){ var u=s.toUpperCase(); i=u.indexOf(code); chunk=i>=0?s.slice(i,i+220):''; }
+    var plain=chunk.replace(/<[^>]+>/g,' ');
+    var m=plain.match(/[-+]?[0-9]+[.]?[0-9]*/);
+    return m?m[0]:null;
   }
   function setTxt(id,v,suf){
     var el=document.getElementById(id); if(!el)return;
     el.textContent=v==null?'\u2014':(suf?v+suf:v);
   }
-  async function fetchWyoming(){
-    var dt=wySlot();
+  async function one(dt){
     var url='https://weather.uwyo.edu/wsgi/sounding?datetime='+encodeURIComponent(dt)+'&id=78988&type=TEXT:LIST';
     var wraps=[
-      function(u){return 'https://r.jina.ai/'+u;},
       function(u){return 'https://corsproxy.io/?url='+encodeURIComponent(u);},
-      function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);}
+      function(u){return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u);},
+      function(u){return 'https://r.jina.ai/'+u;}
     ];
-    var html=null;
-    for(var i=0;i<wraps.length && !html;i++){
+    for(var i=0;i<wraps.length;i++){
       try{
         var r=await fetch(wraps[i](url));
         if(!r.ok) continue;
         var x=await r.text();
-        if(x && x.indexOf('MUCAPE')>=0) html=x;
+        if(x && x.toUpperCase().indexOf('MUCAPE')>=0 && grab(x,'MUCAPE')) return {html:x,dt:dt};
       }catch(e){}
     }
+    return null;
+  }
+  async function fetchWyoming(){
     var meta=document.getElementById('wyMeta');
-    if(!html){ if(meta) meta.textContent='Wyoming 78988 \u00b7 unavailable'; return; }
-    setTxt('wyCape', grab(html,'MUCAPE'));
-    setTxt('wyLi', grab(html,'LFVT'));
-    setTxt('wyK', grab(html,'KINX'));
-    var pw=grab(html,'PWAT');
+    var list=slots(), hit=null;
+    for(var i=0;i<list.length && !hit;i++) hit=await one(list[i]);
+    if(!hit){ if(meta) meta.textContent='Wyoming 78988 · unavailable'; return; }
+    setTxt('wyCape', grab(hit.html,'MUCAPE'));
+    setTxt('wyLi', grab(hit.html,'LFVT'));
+    setTxt('wyK', grab(hit.html,'KINX'));
+    var pw=grab(hit.html,'PWAT');
     setTxt('wyPw', pw, pw!=null?' mm':null);
-    if(meta) meta.textContent='Wyoming 78988 \u00b7 '+dt+' UTC';
+    if(meta) meta.textContent='Wyoming 78988 · '+hit.dt+' UTC';
   }
   setInterval(tick,3000);
+  setInterval(fetchWyoming,30*60*1000);
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') fetchWyoming(); });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){tick();fetchWyoming();});
   else {tick();fetchWyoming();}
 })();
@@ -199,7 +210,7 @@ function restyleDashboard(html){
     if(html.indexOf('<!-- INDOOR -->')>=0){
         html=html.replace(/<!-- INDOOR -->[\s\S]*?<!-- \u2550\u2550\u2550 STATISTICS SECTION \u2550\u2550\u2550 -->/,'        </div>\n\n        <!-- \u2550\u2550\u2550 STATISTICS SECTION \u2550\u2550\u2550 -->');
     }
-    if(html.indexOf('<!-- WEATHER')>=0 && html.indexOf('Hato')<0){
+    if(html.indexOf('<!-- WEATHER')>=0 && html.indexOf('id="wyCape"')<0){
         html=html.replace(/<!-- WEATHER[\s\S]*?<!-- RADIATION \(2 cols\) -->/, WEATHER_HTML + '\n            <!-- RADIATION (2 cols) -->');
     }
     if(html.indexOf('PROJECTED FULL DAY')>=0 || (html.indexOf('id="projUsage"')>=0 && html.indexOf('projMonthUsage')<0)){
@@ -211,7 +222,7 @@ function restyleDashboard(html){
         if(html.indexOf('<body>')>=0) html=html.replace('<body>', '<body>\n'+stubs);
         else html=html.replace('</body>', stubs+'\n</body>');
     }
-    if(html.indexOf('id="uiPatchv123"')<0) html=html.replace('</body>', PATCH_SCRIPT+'\n</body>');
+    if(html.indexOf('id="uiPatchv127"')<0) html=html.replace('</body>', PATCH_SCRIPT+'\n</body>');
     if(html.indexOf('bg-paused')<0) html=html.replace('</style>', 'body.bg-paused .fdot,body.bg-paused .pulse-dot,body.bg-paused .rdrop{animation-play-state:paused!important}</style>');
     _rewriteKey=key; _rewriteOut=html;
     return html;
